@@ -203,6 +203,7 @@ export const MOCK_MEDIA: Media[] = [
     description: 'Emma pendant l\'activité peinture',
     uploadedBy: '2', // Educator
     createdAt: '2023-05-02T14:30:00Z',
+    type: 'photo'
   },
   {
     id: '2',
@@ -211,6 +212,7 @@ export const MOCK_MEDIA: Media[] = [
     description: 'Heure du goûter',
     uploadedBy: '2', // Educator
     createdAt: '2023-05-01T15:45:00Z',
+    type: 'photo'
   },
   {
     id: '3',
@@ -219,6 +221,7 @@ export const MOCK_MEDIA: Media[] = [
     description: 'Lucas joue dans le jardin',
     uploadedBy: '2', // Educator
     createdAt: '2023-05-02T10:15:00Z',
+    type: 'photo'
   },
   {
     id: '4',
@@ -227,5 +230,6 @@ export const MOCK_MEDIA: Media[] = [
     description: 'Léa apprend à compter',
     uploadedBy: '2', // Educator
     createdAt: '2023-05-03T11:30:00Z',
+    type: 'photo'
   },
 ];

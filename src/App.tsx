@@ -16,7 +16,7 @@ import MyChildrenPage from "./pages/MyChildrenPage";
 import MyAssignedChildrenPage from "./pages/MyAssignedChildrenPage";
 import AdmissionsPage from "./pages/AdmissionsPage";
 import MyAdmissionsPage from "./pages/MyAdmissionsPage";
-import NewAdmissionPage from "./pages/NewAdmissionsPage";
+import NewAdmissionPage from "./pages/NewAdmissionPage";
 import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import NotFound from "./pages/NotFound";
