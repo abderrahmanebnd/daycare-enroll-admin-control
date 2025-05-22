@@ -10,9 +10,16 @@ import { Input } from '@/components/ui/input';
 interface ChildListProps {
   parentId?: string;
   isParentView?: boolean;
+  isEducatorView?: boolean;
+  filteredChildren?: Child[];
 }
 
-const ChildList: React.FC<ChildListProps> = ({ parentId, isParentView = false }) => {
+const ChildList: React.FC<ChildListProps> = ({ 
+  parentId, 
+  isParentView = false, 
+  isEducatorView = false,
+  filteredChildren: initialFilteredChildren 
+}) => {
   const { user } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [filteredChildren, setFilteredChildren] = useState<Child[]>([]);
@@ -20,8 +27,14 @@ const ChildList: React.FC<ChildListProps> = ({ parentId, isParentView = false })
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchChildren();
-  }, [parentId, user]);
+    if (initialFilteredChildren) {
+      setChildren(initialFilteredChildren);
+      setFilteredChildren(initialFilteredChildren);
+      setLoading(false);
+    } else {
+      fetchChildren();
+    }
+  }, [parentId, user, initialFilteredChildren]);
 
   useEffect(() => {
     if (searchTerm.trim() === '') {
@@ -92,7 +105,12 @@ const ChildList: React.FC<ChildListProps> = ({ parentId, isParentView = false })
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChildren.map((child) => (
-            <ChildCard key={child.id} child={child} isParent={isParentView} />
+            <ChildCard 
+              key={child.id} 
+              child={child} 
+              isParent={isParentView} 
+              isEducator={isEducatorView} 
+            />
           ))}
         </div>
       )}

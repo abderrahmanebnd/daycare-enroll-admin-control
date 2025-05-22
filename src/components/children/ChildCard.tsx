@@ -8,9 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 interface ChildCardProps {
   child: Child;
   isParent?: boolean;
+  isEducator?: boolean;
 }
 
-const ChildCard: React.FC<ChildCardProps> = ({ child, isParent = false }) => {
+const ChildCard: React.FC<ChildCardProps> = ({ child, isParent = false, isEducator = false }) => {
   const navigate = useNavigate();
   
   const birthdate = new Date(child.dob);
@@ -27,7 +28,13 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, isParent = false }) => {
     : `${age} an${age > 1 ? 's' : ''}`;
 
   const handleViewProfile = () => {
-    navigate(`/children/${child.id}`);
+    if (isParent) {
+      navigate(`/parent/children/${child.id}/profile`);
+    } else if (isEducator) {
+      navigate(`/children/${child.id}/profile`);
+    } else {
+      navigate(`/admin/children/${child.id}/edit`);
+    }
   };
 
   const handleMessageParent = () => {
@@ -80,7 +87,7 @@ const ChildCard: React.FC<ChildCardProps> = ({ child, isParent = false }) => {
           className="w-full bg-daycare-primary hover:bg-daycare-primary/90"
           onClick={handleViewProfile}
         >
-          {isParent ? 'Voir le profil' : 'Modifier'}
+          {isParent || isEducator ? 'Voir le profil' : 'Modifier'}
         </Button>
         {!isParent && (
           <Button 

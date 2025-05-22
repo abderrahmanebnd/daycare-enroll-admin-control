@@ -63,4 +63,5 @@ export interface Media {
   description?: string;
   uploadedBy: string;
   createdAt: string;
+  type: 'photo' | 'video';
 }
