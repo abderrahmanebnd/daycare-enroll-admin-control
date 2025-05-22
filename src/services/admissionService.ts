@@ -57,7 +57,12 @@ class AdmissionService {
     return newRequest;
   }
 
-  async updateAdmissionStatus(id: string, status: AdmissionStatus, adminId: string): Promise<AdmissionRequest | undefined> {
+  async updateAdmissionStatus(
+    id: string, 
+    status: AdmissionStatus, 
+    adminId: string,
+    educatorId?: string
+  ): Promise<AdmissionRequest | undefined> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 800));
     
@@ -83,6 +88,7 @@ class AdmissionService {
         specialNeeds: updatedRequest.specialNeeds,
         parentId: updatedRequest.parentId,
         mediaConsent: updatedRequest.mediaConsent,
+        educatorId: educatorId, // Add the assigned educator
       });
       
       // Notify parent about approval
@@ -93,6 +99,17 @@ class AdmissionService {
         read: false,
         createdBy: adminId,
       });
+
+      // If an educator was assigned, notify them too
+      if (educatorId) {
+        await notificationService.createNotification({
+          title: 'Nouvel enfant assigné',
+          content: `Un nouvel enfant (${updatedRequest.childName}) a été assigné à votre groupe.`,
+          targetUserId: educatorId,
+          read: false,
+          createdBy: adminId,
+        });
+      }
     } else if (status === 'rejected') {
       // Notify parent about rejection
       await notificationService.createNotification({

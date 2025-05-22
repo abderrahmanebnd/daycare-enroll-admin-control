@@ -2,11 +2,19 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { admissionService } from '@/services/admissionService';
-import { AdmissionRequest } from '@/types';
+import { AdmissionRequest, User } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MOCK_USERS } from '@/services/mockData';
 
 interface AdmissionRequestListProps {
   parentId?: string;
@@ -21,9 +29,16 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
   const { toast } = useToast();
   const [requests, setRequests] = useState<AdmissionRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [educators, setEducators] = useState<User[]>([]);
+  const [selectedEducators, setSelectedEducators] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchRequests();
+    if (user?.role === 'admin') {
+      // Get all educators for the assignment dropdown
+      const educatorsList = MOCK_USERS.filter(user => user.role === 'educator');
+      setEducators(educatorsList);
+    }
   }, [parentId, user]);
 
   const fetchRequests = async () => {
@@ -49,11 +64,29 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
     }
   };
 
+  const handleSelectEducator = (requestId: string, educatorId: string) => {
+    setSelectedEducators({
+      ...selectedEducators,
+      [requestId]: educatorId,
+    });
+  };
+
   const handleApproveRequest = async (id: string) => {
     try {
       if (!user) return;
       
-      await admissionService.updateAdmissionStatus(id, 'approved', user.id);
+      // Check if an educator is selected for this request
+      const educatorId = selectedEducators[id];
+      if (!educatorId) {
+        toast({
+          title: 'Sélection requise',
+          description: 'Veuillez sélectionner un éducateur pour cet enfant.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      await admissionService.updateAdmissionStatus(id, 'approved', user.id, educatorId);
       
       // Update local state
       setRequests(requests.map(req => 
@@ -197,21 +230,43 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
             </div>
           </CardContent>
           {user?.role === 'admin' && request.status === 'pending' && (
-            <CardFooter className="pt-2 flex gap-2">
-              <Button 
-                variant="default" 
-                className="w-full bg-daycare-secondary hover:bg-daycare-secondary/90"
-                onClick={() => handleApproveRequest(request.id)}
-              >
-                Approuver
-              </Button>
-              <Button 
-                variant="outline"
-                className="w-full border-red-300 text-red-600 hover:bg-red-50"
-                onClick={() => handleRejectRequest(request.id)}
-              >
-                Refuser
-              </Button>
+            <CardFooter className="pt-2 flex flex-col gap-2">
+              <div className="w-full mb-2">
+                <label className="text-sm font-medium mb-1 block">
+                  Assigner un éducateur:
+                </label>
+                <Select 
+                  onValueChange={(value) => handleSelectEducator(request.id, value)}
+                  value={selectedEducators[request.id] || ""}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choisir un éducateur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {educators.map((educator) => (
+                      <SelectItem key={educator.id} value={educator.id}>
+                        {educator.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2 w-full">
+                <Button 
+                  variant="default" 
+                  className="w-full bg-daycare-secondary hover:bg-daycare-secondary/90"
+                  onClick={() => handleApproveRequest(request.id)}
+                >
+                  Approuver
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                  onClick={() => handleRejectRequest(request.id)}
+                >
+                  Refuser
+                </Button>
+              </div>
             </CardFooter>
           )}
         </Card>

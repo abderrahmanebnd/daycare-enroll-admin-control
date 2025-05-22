@@ -16,6 +16,7 @@ export interface Child {
   allergies: string;
   specialNeeds: string;
   parentId: string;
+  educatorId?: string;  // New field for assigned educator
   mediaConsent: boolean;
   profilePicture?: string;
   createdAt: string;

@@ -14,6 +14,7 @@ interface Contact extends User {
   lastMessage?: Message;
   unreadCount: number;
   children?: Child[];
+  isAssignedEducator?: boolean;
 }
 
 const ContactList = () => {
@@ -25,6 +26,7 @@ const ContactList = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [myChildren, setMyChildren] = useState<Child[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -35,8 +37,11 @@ const ContactList = () => {
   useEffect(() => {
     // Get selected contact from URL params
     const params = new URLSearchParams(location.search);
+    const contactId = params.get('contactId');
     const parentId = params.get('parentId');
-    if (parentId) {
+    if (contactId) {
+      setSelectedContactId(contactId);
+    } else if (parentId) {
       setSelectedContactId(parentId);
     }
   }, [location.search]);
@@ -75,11 +80,25 @@ const ContactList = () => {
           unreadCount: 0
         }));
       } else if (user?.role === 'parent') {
+        // First, get children to identify assigned educators
+        const children = await childService.getChildrenByParentId(user.id);
+        setMyChildren(children);
+        
+        // Create a set of educator IDs assigned to my children
+        const assignedEducatorIds = new Set(
+          children
+            .filter(child => child.educatorId)
+            .map(child => child.educatorId)
+        );
+        
         // Parents can message admins and educators
-        userContacts = MOCK_USERS.filter(u => u.role === 'admin' || u.role === 'educator').map(u => ({
-          ...u,
-          unreadCount: 0
-        }));
+        userContacts = MOCK_USERS
+          .filter(u => u.role === 'admin' || u.role === 'educator')
+          .map(u => ({
+            ...u,
+            unreadCount: 0,
+            isAssignedEducator: u.role === 'educator' && assignedEducatorIds.has(u.id)
+          }));
       }
       
       // Get last messages and unread counts
@@ -105,12 +124,19 @@ const ContactList = () => {
         }
       }
       
-      // Sort contacts: first by unread messages, then by most recent message
+      // Sort contacts: first assigned educators, then by unread messages, then by most recent message
       userContacts.sort((a, b) => {
+        // First, prioritize assigned educators
+        if (a.isAssignedEducator !== b.isAssignedEducator) {
+          return a.isAssignedEducator ? -1 : 1;
+        }
+        
+        // Then sort by unread messages
         if (a.unreadCount !== b.unreadCount) {
           return b.unreadCount - a.unreadCount;
         }
         
+        // Finally sort by most recent message
         if (!a.lastMessage && !b.lastMessage) return 0;
         if (!a.lastMessage) return 1;
         if (!b.lastMessage) return -1;
@@ -182,13 +208,24 @@ const ContactList = () => {
             >
               <div className="flex items-start gap-3 w-full">
                 <Avatar>
-                  <AvatarFallback className="bg-daycare-primary text-white">
+                  <AvatarFallback className={`text-white ${
+                    contact.isAssignedEducator 
+                      ? 'bg-daycare-secondary' 
+                      : 'bg-daycare-primary'
+                  }`}>
                     {getInitials(contact.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 text-left">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">{contact.name}</span>
+                    <span className="font-medium">
+                      {contact.name}
+                      {contact.isAssignedEducator && (
+                        <span className="ml-2 text-xs bg-daycare-secondary/20 text-daycare-secondary px-2 py-0.5 rounded-full">
+                          Éducateur assigné
+                        </span>
+                      )}
+                    </span>
                     {contact.unreadCount > 0 && (
                       <span className="bg-daycare-primary text-white text-xs rounded-full px-2 py-1 ml-2">
                         {contact.unreadCount}

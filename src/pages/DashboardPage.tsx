@@ -9,7 +9,9 @@ import { childService } from '@/services/childService';
 import { admissionService } from '@/services/admissionService';
 import { messageService } from '@/services/messageService';
 import { notificationService } from '@/services/notificationService';
-import { Child, AdmissionRequest, Message, Notification } from '@/types';
+import { Child, AdmissionRequest, Message, Notification, User } from '@/types';
+import ChildEducator from '@/components/children/ChildEducator';
+import { MOCK_USERS } from '@/services/mockData';
 
 const DashboardPage = () => {
   const { user, isLoading } = useAuth();
@@ -20,6 +22,7 @@ const DashboardPage = () => {
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [assignedEducators, setAssignedEducators] = useState<Record<string, User>>({});
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -39,6 +42,18 @@ const DashboardPage = () => {
       let childrenData: Child[] = [];
       if (user?.role === 'parent') {
         childrenData = await childService.getChildrenByParentId(user.id);
+        
+        // Fetch educator data for each child
+        const educatorsMap: Record<string, User> = {};
+        for (const child of childrenData) {
+          if (child.educatorId) {
+            const educator = MOCK_USERS.find(u => u.id === child.educatorId);
+            if (educator) {
+              educatorsMap[child.id] = educator;
+            }
+          }
+        }
+        setAssignedEducators(educatorsMap);
       } else {
         childrenData = await childService.getAllChildren();
       }
@@ -209,7 +224,25 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          {user.role === 'parent' && (
+          {user.role === 'parent' && children.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Éducateurs de mes enfants</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {children.map((child) => (
+                    <div key={child.id} className="border-b pb-4 last:border-0 last:pb-0">
+                      <h3 className="font-medium mb-2">{child.name}</h3>
+                      <ChildEducator educatorId={child.educatorId} />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {user.role === 'parent' && children.length === 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Actions rapides</CardTitle>
