@@ -37,8 +37,8 @@ export const MOCK_USERS: User[] = [
 export const MOCK_CHILDREN: Child[] = [
   {
     id: '1',
-    name: 'Emma Dupont',
-    dob: '2019-05-12T00:00:00Z',
+    fullName: 'Emma Dupont',
+    dateOfBirth: '2019-05-12T00:00:00Z',
     allergies: 'Nuts, Eggs',
     specialNeeds: 'None',
     parentId: '3',
@@ -48,8 +48,8 @@ export const MOCK_CHILDREN: Child[] = [
   },
   {
     id: '2',
-    name: 'Lucas Laurent',
-    dob: '2020-03-22T00:00:00Z',
+    fullName: 'Lucas Laurent',
+    dateOfBirth: '2020-03-22T00:00:00Z',
     allergies: 'None',
     specialNeeds: 'Mild sensory sensitivity',
     parentId: '4',
@@ -59,8 +59,8 @@ export const MOCK_CHILDREN: Child[] = [
   },
   {
     id: '3',
-    name: 'Léa Dupont',
-    dob: '2021-01-08T00:00:00Z',
+    fullName: 'Léa Dupont',
+    dateOfBirth: '2021-01-08T00:00:00Z',
     allergies: 'Dairy',
     specialNeeds: 'None',
     parentId: '3',
@@ -75,7 +75,7 @@ export const MOCK_ADMISSION_REQUESTS: AdmissionRequest[] = [
   {
     id: '1',
     childName: 'Noah Bernard',
-    dob: '2021-07-15T00:00:00Z',
+    dateOfBirth: '2021-07-15T00:00:00Z',
     allergies: 'Peanuts',
     specialNeeds: 'None',
     parentId: '4',
@@ -86,7 +86,7 @@ export const MOCK_ADMISSION_REQUESTS: AdmissionRequest[] = [
   {
     id: '2',
     childName: 'Chloé Moreau',
-    dob: '2020-11-30T00:00:00Z',
+    dateOfBirth: '2020-11-30T00:00:00Z',
     allergies: 'None',
     specialNeeds: 'Speech delay',
     parentId: '3',
@@ -97,7 +97,7 @@ export const MOCK_ADMISSION_REQUESTS: AdmissionRequest[] = [
   {
     id: '3',
     childName: 'Ethan Petit',
-    dob: '2022-02-18T00:00:00Z',
+    dateOfBirth: '2022-02-18T00:00:00Z',
     allergies: 'Gluten',
     specialNeeds: 'None',
     parentId: '4',
@@ -108,7 +108,7 @@ export const MOCK_ADMISSION_REQUESTS: AdmissionRequest[] = [
   {
     id: '4',
     childName: 'Jade Roux',
-    dob: '2021-12-05T00:00:00Z',
+    dateOfBirth: '2021-12-05T00:00:00Z',
     allergies: 'None',
     specialNeeds: 'None',
     parentId: '3',

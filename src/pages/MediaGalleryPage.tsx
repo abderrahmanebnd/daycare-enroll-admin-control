@@ -101,16 +101,11 @@ const MediaGalleryPage = () => {
 
   const getChildName = (childId: string): string => {
     const child = userChildren.find((c) => c.id === childId);
-    return child ? child.name : "Enfant inconnu";
+    return child ? child.fullName : "Enfant inconnu";
   };
 
   const handleMediaAdded = () => {
     fetchData(); // Refresh media data
-  };
-
-  const handleUploadMedia = () => {
-    // For now, just log this action
-    console.log("Upload media clicked");
   };
 
   if (isLoading || loading) {

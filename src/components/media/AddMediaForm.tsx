@@ -27,7 +27,7 @@ import { mediaService } from "@/services/mediaService";
 import { childService } from "@/services/childService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Media, Child } from "@/types";
-import { Plus, Camera } from "lucide-react";
+import { Camera } from "lucide-react";
 
 const mediaFormSchema = z.object({
   title: z.string().min(1, "Le titre est requis"),
@@ -37,6 +37,7 @@ const mediaFormSchema = z.object({
     message: "Veuillez sélectionner un type de média",
   }),
   fileUrl: z.string().min(1, "Veuillez fournir une URL de fichier"),
+  uploadDate: z.string().min(1, "Veuillez sélectionner une date"),
 });
 
 interface AddMediaFormProps {
@@ -58,6 +59,7 @@ const AddMediaForm: React.FC<AddMediaFormProps> = ({ onMediaAdded }) => {
       childId: "",
       type: "photo",
       fileUrl: "",
+      uploadDate: new Date().toISOString().split('T')[0], // Today's date
     },
   });
 
@@ -94,7 +96,14 @@ const AddMediaForm: React.FC<AddMediaFormProps> = ({ onMediaAdded }) => {
         description: `${values.title} a été ajouté avec succès.`,
       });
       
-      form.reset();
+      form.reset({
+        title: "",
+        description: "",
+        childId: "",
+        type: "photo",
+        fileUrl: "",
+        uploadDate: new Date().toISOString().split('T')[0],
+      });
       setIsOpen(false);
       onMediaAdded();
     } catch (error) {
@@ -134,6 +143,23 @@ const AddMediaForm: React.FC<AddMediaFormProps> = ({ onMediaAdded }) => {
                   <FormLabel>Titre</FormLabel>
                   <FormControl>
                     <Input placeholder="Titre du média..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="uploadDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date d'upload</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
