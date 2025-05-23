@@ -8,6 +8,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MOCK_USERS } from "@/services/mockData";
+import AddMediaForm from "@/components/media/AddMediaForm";
 
 const MediaGalleryPage = () => {
   const { user, isLoading } = useAuth();
@@ -103,6 +104,10 @@ const MediaGalleryPage = () => {
     return child ? child.name : "Enfant inconnu";
   };
 
+  const handleMediaAdded = () => {
+    fetchData(); // Refresh media data
+  };
+
   const handleUploadMedia = () => {
     // For now, just log this action
     console.log("Upload media clicked");
@@ -124,12 +129,7 @@ const MediaGalleryPage = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Galerie de médias</h1>
           {(user?.role === "admin" || user?.role === "educator") && (
-            <Button
-              className="bg-daycare-primary hover:bg-daycare-primary/90 mt-4 sm:mt-0"
-              onClick={handleUploadMedia}
-            >
-              Ajouter une photo
-            </Button>
+            <AddMediaForm onMediaAdded={handleMediaAdded} />
           )}
         </div>
 
