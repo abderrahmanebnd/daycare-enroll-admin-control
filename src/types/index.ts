@@ -10,9 +10,11 @@ export interface User {
 
 export interface Child {
   id: string;
-  name: string;
-  dob: string;
+  fullName: string;
+  gender: string;
+  dateOfBirth: string;
   allergies: string;
+  emergencyContact: string;
   specialNeeds: string;
   parentId: string;
   educatorId?: string; // New field for assigned educator

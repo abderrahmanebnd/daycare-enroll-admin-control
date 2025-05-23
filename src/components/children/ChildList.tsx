@@ -1,11 +1,10 @@
-
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { childService } from '@/services/childService';
-import { Child } from '@/types';
-import ChildCard from './ChildCard';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { childService } from "@/services/childService";
+import { Child } from "@/types";
+import ChildCard from "./ChildCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface ChildListProps {
   parentId?: string;
@@ -14,17 +13,17 @@ interface ChildListProps {
   filteredChildren?: Child[];
 }
 
-const ChildList: React.FC<ChildListProps> = ({ 
-  parentId, 
-  isParentView = false, 
+const ChildList: React.FC<ChildListProps> = ({
+  parentId,
+  isParentView = false,
   isEducatorView = false,
-  filteredChildren: initialFilteredChildren 
+  filteredChildren: initialFilteredChildren,
 }) => {
   const { user } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [filteredChildren, setFilteredChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (initialFilteredChildren) {
@@ -37,14 +36,15 @@ const ChildList: React.FC<ChildListProps> = ({
   }, [parentId, user, initialFilteredChildren]);
 
   useEffect(() => {
-    if (searchTerm.trim() === '') {
+    if (searchTerm.trim() === "") {
       setFilteredChildren(children);
     } else {
       const lowerSearchTerm = searchTerm.toLowerCase();
-      const filtered = children.filter(child => 
-        child.name.toLowerCase().includes(lowerSearchTerm) || 
-        child.allergies.toLowerCase().includes(lowerSearchTerm) ||
-        child.specialNeeds.toLowerCase().includes(lowerSearchTerm)
+      const filtered = children.filter(
+        (child) =>
+          child.fullName.toLowerCase().includes(lowerSearchTerm) ||
+          child.allergies.toLowerCase().includes(lowerSearchTerm) ||
+          child.specialNeeds.toLowerCase().includes(lowerSearchTerm)
       );
       setFilteredChildren(filtered);
     }
@@ -54,19 +54,19 @@ const ChildList: React.FC<ChildListProps> = ({
     try {
       setLoading(true);
       let childrenData: Child[];
-      
+
       if (parentId) {
-        childrenData = await childService.getChildrenByParentId(parentId);
-      } else if (user?.role === 'parent') {
-        childrenData = await childService.getChildrenByParentId(user.id);
+        childrenData = await childService.getChildrenByParent();
+      } else if (user?.role === "parent") {
+        childrenData = await childService.getChildrenByParent();
       } else {
         childrenData = await childService.getAllChildren();
       }
-      
+
       setChildren(childrenData);
       setFilteredChildren(childrenData);
     } catch (error) {
-      console.error('Error fetching children:', error);
+      console.error("Error fetching children:", error);
     } finally {
       setLoading(false);
     }
@@ -89,27 +89,30 @@ const ChildList: React.FC<ChildListProps> = ({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-md"
         />
-        {(user?.role === 'admin' || user?.role === 'educator') && !isParentView && (
-          <Button className="bg-daycare-primary hover:bg-daycare-primary/90">
-            Ajouter un enfant
-          </Button>
-        )}
+        {(user?.role === "admin" || user?.role === "educator") &&
+          !isParentView && (
+            <Button className="bg-daycare-primary hover:bg-daycare-primary/90">
+              Ajouter un enfant
+            </Button>
+          )}
       </div>
 
       {filteredChildren.length === 0 ? (
         <div className="text-center p-8 bg-muted/20 rounded-lg">
           <p className="text-muted-foreground">
-            {searchTerm ? 'Aucun enfant ne correspond à votre recherche' : 'Aucun enfant inscrit'}
+            {searchTerm
+              ? "Aucun enfant ne correspond à votre recherche"
+              : "Aucun enfant inscrit"}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChildren.map((child) => (
-            <ChildCard 
-              key={child.id} 
-              child={child} 
-              isParent={isParentView} 
-              isEducator={isEducatorView} 
+            <ChildCard
+              key={child.id}
+              child={child}
+              isParent={isParentView}
+              isEducator={isEducatorView}
             />
           ))}
         </div>
