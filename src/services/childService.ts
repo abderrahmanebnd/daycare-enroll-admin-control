@@ -7,18 +7,17 @@ class ChildService {
   private children: Child[] = [...MOCK_CHILDREN];
 
   async getAllChildren(): Promise<Child[]> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return [...this.children];
+    const { data } = await axiosPrivate.get("/users/children");
+    console.log("Fetched children data:", data.data);
+    return data.data;
   }
 
   async getChildById(id: string): Promise<Child | undefined> {
-    // Simulate API delay
     const { data } = await axiosPrivate.get(`/users/children/${id}`);
     return data.data;
   }
 
-  async getChildrenByParent(): Promise<Child[]> {
+  async getMyChildren(): Promise<Child[]> {
     const { data } = await axiosPrivate.get("/users/children/my");
     return data.data;
   }
@@ -41,22 +40,9 @@ class ChildService {
     id: string,
     childData: Partial<Child>
   ): Promise<Child | undefined> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const index = this.children.findIndex((child) => child.id === id);
-
-    if (index === -1) {
-      return undefined;
-    }
-
-    const updatedChild: Child = {
-      ...this.children[index],
-      ...childData,
-    };
-
-    this.children[index] = updatedChild;
-    return updatedChild;
+    const { data } = await axiosPrivate.put(`/users/children/${id}`, childData);
+    console.log("Updated child data:", data.data);
+    return data.data;
   }
 
   async deleteChild(id: string): Promise<boolean> {

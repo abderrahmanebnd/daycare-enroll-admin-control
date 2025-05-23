@@ -50,7 +50,7 @@ class AdmissionService {
   ): Promise<AdmissionRequest> {
     const payload: any = { decision: status };
 
-    if (status === "approved" && educatorId) {
+    if (status === "accepted" && educatorId) {
       payload.educatorId = educatorId;
     }
 

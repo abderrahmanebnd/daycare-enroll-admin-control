@@ -9,21 +9,23 @@ export interface User {
 }
 
 export interface Child {
-  id: string;
+  id: string | number;
   fullName: string;
   gender: string;
   dateOfBirth: string;
   allergies: string;
   emergencyContact: string;
   specialNeeds: string;
-  parentId: string;
-  educatorId?: string; // New field for assigned educator
+  parentId: string | number;
+  educatorId?: string | number; // New field for assigned educator
+  educator: User | null; // Educator object or null if not assigned
+  parent: User | null; // Parent object or null if not assigned
   mediaConsent: boolean;
   profilePicture?: string;
   createdAt: string;
 }
 
-export type AdmissionStatus = "pending" | "approved" | "rejected";
+export type AdmissionStatus = "pending" | "accepted" | "rejected";
 
 export interface AdmissionRequest {
   id: string;

@@ -46,7 +46,7 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
   const fetchEducators = async () => {
     try {
       const { data } = await axiosPrivate.get("/users?role=educator");
-      setEducators(data.users || []);
+      setEducators(data.data || []);
     } catch (err) {
       console.error("Failed to load educators:", err);
     }

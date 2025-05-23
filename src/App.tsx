@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import EditChildPage from "./pages/EditChildPage";
 import ChildProfilePage from "./pages/ChildProfilePage";
 import MediaGalleryPage from "./pages/MediaGalleryPage";
+import UserManagement from "./pages/UserManagment";
 
 const queryClient = new QueryClient();
 
@@ -40,10 +40,23 @@ const App = () => (
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/children" element={<ChildrenPage />} />
             <Route path="/my-children" element={<MyChildrenPage />} />
-            <Route path="/my-assigned-children" element={<MyAssignedChildrenPage />} />
-            <Route path="/admin/children/:id/edit" element={<EditChildPage />} />
-            <Route path="/parent/children/:id/profile" element={<ChildProfilePage />} />
-            <Route path="/children/:id/profile" element={<ChildProfilePage />} />
+            <Route
+              path="/my-assigned-children"
+              element={<MyAssignedChildrenPage />}
+            />
+            <Route
+              path="/admin/children/:id/edit"
+              element={<EditChildPage />}
+            />
+            <Route path="/users" element={<UserManagement />} />
+            <Route
+              path="/parent/children/:id/profile"
+              element={<ChildProfilePage />}
+            />
+            <Route
+              path="/children/:id/profile"
+              element={<ChildProfilePage />}
+            />
             <Route path="/media" element={<MediaGalleryPage />} />
             <Route path="/admissions" element={<AdmissionsPage />} />
             <Route path="/my-admissions" element={<MyAdmissionsPage />} />

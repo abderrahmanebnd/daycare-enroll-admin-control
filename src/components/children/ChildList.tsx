@@ -3,8 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { childService } from "@/services/childService";
 import { Child } from "@/types";
 import ChildCard from "./ChildCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface ChildListProps {
   parentId?: string;
@@ -55,10 +53,8 @@ const ChildList: React.FC<ChildListProps> = ({
       setLoading(true);
       let childrenData: Child[];
 
-      if (parentId) {
-        childrenData = await childService.getChildrenByParent();
-      } else if (user?.role === "parent") {
-        childrenData = await childService.getChildrenByParent();
+      if (user?.role === "parent" || user?.role === "educator") {
+        childrenData = await childService.getMyChildren();
       } else {
         childrenData = await childService.getAllChildren();
       }
@@ -82,7 +78,7 @@ const ChildList: React.FC<ChildListProps> = ({
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center justify-between">
+      {/* <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center justify-between">
         <Input
           placeholder="Rechercher par nom, allergies..."
           value={searchTerm}
@@ -95,7 +91,7 @@ const ChildList: React.FC<ChildListProps> = ({
               Ajouter un enfant
             </Button>
           )}
-      </div>
+      </div> */}
 
       {filteredChildren.length === 0 ? (
         <div className="text-center p-8 bg-muted/20 rounded-lg">

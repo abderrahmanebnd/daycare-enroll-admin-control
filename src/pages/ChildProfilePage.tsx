@@ -7,7 +7,7 @@ import { mediaService } from "@/services/mediaService";
 import { Child, Media } from "@/types";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import ChildEducator from "@/components/children/ChildEducator";
+import ChildEducatorParent from "@/components/children/ChildEducatorParent";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon } from "lucide-react";
@@ -232,13 +232,17 @@ const ChildProfilePage = () => {
 
           {/* Right column - Educator info */}
           <div>
-            <ChildEducator educatorId={child.educatorId} />
+            {}
+            <ChildEducatorParent
+              educator={child.educator}
+              parent={child.parent}
+            />
 
-            {user?.role === "parent" && child.educatorId && (
+            {/* {user?.role === "parent" && child.educatorId && (
               <Button className="w-full mt-4" onClick={handleContactEducator}>
                 Contacter l'éducateur
               </Button>
-            )}
+            )} */}
           </div>
         </div>
       </div>

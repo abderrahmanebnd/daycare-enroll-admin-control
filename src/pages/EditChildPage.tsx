@@ -1,57 +1,55 @@
-
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { format } from 'date-fns';
-import { CalendarIcon, User as UserIcon } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { childService } from '@/services/childService';
-import { Child, User } from '@/types';
-import { MOCK_USERS } from '@/services/mockData';
-import MainLayout from '@/components/layout/MainLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from '@/components/ui/form';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format } from "date-fns";
+import { CalendarIcon, User as UserIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { childService } from "@/services/childService";
+import { Child, User } from "@/types";
+import { MOCK_USERS } from "@/services/mockData";
+import MainLayout from "@/components/layout/MainLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from 'sonner';
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import axiosPrivate from "@/axios/axios";
 
 const childFormSchema = z.object({
-  name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
-  dob: z.date({ required_error: "La date de naissance est requise" }),
+  fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  dateOfBirth: z.date({ required_error: "La date de naissance est requise" }),
   gender: z.string({ required_error: "Le genre est requis" }),
   allergies: z.string().optional(),
   specialNeeds: z.string().optional(),
-  emergencyContactName: z.string().min(2, 'Le nom du contact est requis'),
-  emergencyContactPhone: z.string().min(8, 'Le numéro de téléphone est requis'),
-  emergencyContactRelation: z.string().min(2, 'La relation est requise'),
+  emergencyContact: z.string().min(9).optional(),
   mediaConsent: z.boolean().default(false),
-  educatorId: z.string().optional(),
+  educatorId: z.number().optional(),
 });
 
 type ChildFormValues = z.infer<typeof childFormSchema>;
@@ -68,56 +66,60 @@ const EditChildPage = () => {
   const form = useForm<ChildFormValues>({
     resolver: zodResolver(childFormSchema),
     defaultValues: {
-      name: '',
-      allergies: '',
-      specialNeeds: '',
-      emergencyContactName: '',
-      emergencyContactPhone: '',
-      emergencyContactRelation: '',
+      fullName: "",
+      allergies: "",
+      specialNeeds: "",
+      emergencyContact: "",
       mediaConsent: false,
     },
   });
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== 'admin')) {
-      navigate('/login');
+    if (!isLoading && (!user || user.role !== "admin")) {
+      navigate("/login");
     }
-    
+
     if (id) {
       fetchChild(id);
     }
 
-    // Get educators for dropdown
-    const educatorsList = MOCK_USERS.filter(user => user.role === 'educator');
-    setEducators(educatorsList);
+    fetchEducators();
   }, [id, user, isLoading, navigate]);
+
+  const fetchEducators = async () => {
+    try {
+      const { data } = await axiosPrivate.get("/users?role=educator");
+      setEducators(data.data || []);
+    } catch (err) {
+      console.error("Failed to load educators:", err);
+    }
+  };
 
   const fetchChild = async (childId: string) => {
     try {
       setLoading(true);
       const childData = await childService.getChildById(childId);
-      
+
       if (childData) {
         setChild(childData);
         setProfileImage(childData.profilePicture || null);
-        
+
         // Set form values
         form.reset({
-          name: childData.name,
-          dob: new Date(childData.dob),
-          gender: 'other', // Set a default since we don't have gender in the model yet
-          allergies: childData.allergies || '',
-          specialNeeds: childData.specialNeeds || '',
-          emergencyContactName: '',  // We don't have this data in the model yet
-          emergencyContactPhone: '',
-          emergencyContactRelation: '',
+          fullName: childData.fullName,
+          dateOfBirth: new Date(childData.dateOfBirth),
+          gender: "female",
+          allergies: childData.allergies || "",
+          specialNeeds: childData.specialNeeds || "",
+          emergencyContact: childData.emergencyContact || "", // We don't have this data in the model yet
+
           mediaConsent: childData.mediaConsent,
-          educatorId: childData.educatorId,
+          educatorId: Number(childData.educatorId),
         });
       }
     } catch (error) {
-      console.error('Error fetching child:', error);
-      toast.error('Erreur lors du chargement des données de l\'enfant');
+      console.error("Error fetching child:", error);
+      toast.error("Erreur lors du chargement des données de l'enfant");
     } finally {
       setLoading(false);
     }
@@ -125,26 +127,27 @@ const EditChildPage = () => {
 
   const onSubmit = async (data: ChildFormValues) => {
     if (!id || !child) return;
-    
+
     try {
       const updatedChild = await childService.updateChild(id, {
         ...child,
-        name: data.name,
-        dob: data.dob.toISOString(),
-        allergies: data.allergies || '',
-        specialNeeds: data.specialNeeds || '',
+        fullName: data.fullName,
+        dateOfBirth: data.dateOfBirth.toISOString(),
+        allergies: data.allergies || "",
+        specialNeeds: data.specialNeeds || "",
         mediaConsent: data.mediaConsent,
-        educatorId: data.educatorId,
+        emergencyContact: data.emergencyContact,
+        educatorId: Number(data.educatorId),
         profilePicture: profileImage || undefined,
       });
-      
+
       if (updatedChild) {
-        toast.success('Profil de l\'enfant mis à jour avec succès');
-        navigate('/children');
+        toast.success("Profil de l'enfant mis à jour avec succès");
+        navigate("/children");
       }
     } catch (error) {
-      console.error('Error updating child profile:', error);
-      toast.error('Erreur lors de la mise à jour du profil');
+      console.error("Error updating child profile:", error);
+      toast.error("Erreur lors de la mise à jour du profil");
     }
   };
 
@@ -169,7 +172,7 @@ const EditChildPage = () => {
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== "admin") {
     return null;
   }
 
@@ -178,10 +181,7 @@ const EditChildPage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Modifier le profil de l'enfant</h1>
-          <Button 
-            variant="outline"
-            onClick={() => navigate('/children')}
-          >
+          <Button variant="outline" onClick={() => navigate("/children")}>
             Retour
           </Button>
         </div>
@@ -195,31 +195,46 @@ const EditChildPage = () => {
                   <UserIcon className="w-12 h-12" />
                 </AvatarFallback>
               </Avatar>
-              <label htmlFor="profile-upload" className="absolute bottom-0 right-0 bg-daycare-primary hover:bg-daycare-primary/90 text-white p-2 rounded-full cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <label
+                htmlFor="profile-upload"
+                className="absolute bottom-0 right-0 bg-daycare-primary hover:bg-daycare-primary/90 text-white p-2 rounded-full cursor-pointer"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
                   <path d="m12 18 4-4"></path>
                   <path d="M8 18h4v-4"></path>
                   <path d="M15 3h6v6"></path>
                   <path d="m13 9 6-6"></path>
                 </svg>
-                <input 
-                  id="profile-upload" 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*" 
+                <input
+                  id="profile-upload"
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
                   onChange={handleImageUpload}
                 />
               </label>
             </div>
-            <p className="text-sm text-muted-foreground">Cliquez pour changer la photo</p>
+            <p className="text-sm text-muted-foreground">
+              Cliquez pour changer la photo
+            </p>
           </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="name"
+                name="fullName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nom complet</FormLabel>
@@ -234,7 +249,7 @@ const EditChildPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="dob"
+                  name="dateOfBirth"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Date de naissance</FormLabel>
@@ -281,8 +296,8 @@ const EditChildPage = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Genre</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -293,7 +308,6 @@ const EditChildPage = () => {
                         <SelectContent>
                           <SelectItem value="male">Masculin</SelectItem>
                           <SelectItem value="female">Féminin</SelectItem>
-                          <SelectItem value="other">Autre</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -309,13 +323,14 @@ const EditChildPage = () => {
                   <FormItem>
                     <FormLabel>Allergies</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        {...field} 
-                        placeholder="Listez toutes les allergies (une par ligne)" 
+                      <Textarea
+                        {...field}
+                        placeholder="Listez toutes les allergies (une par ligne)"
                       />
                     </FormControl>
                     <FormDescription>
-                      Listez toutes les allergies, y compris alimentaires et médicamenteuses
+                      Listez toutes les allergies, y compris alimentaires et
+                      médicamenteuses
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -329,9 +344,9 @@ const EditChildPage = () => {
                   <FormItem>
                     <FormLabel>Besoins spéciaux</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        {...field} 
-                        placeholder="Décrivez les besoins spéciaux de l'enfant" 
+                      <Textarea
+                        {...field}
+                        placeholder="Décrivez les besoins spéciaux de l'enfant"
                       />
                     </FormControl>
                     <FormMessage />
@@ -341,24 +356,10 @@ const EditChildPage = () => {
 
               <div className="p-4 border rounded-md space-y-4">
                 <h3 className="font-medium">Contact d'urgence</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <FormField
                     control={form.control}
-                    name="emergencyContactName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nom du contact</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nom complet" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="emergencyContactPhone"
+                    name="emergencyContact"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Téléphone</FormLabel>
@@ -370,20 +371,6 @@ const EditChildPage = () => {
                     )}
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="emergencyContactRelation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Relation</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Parent, Tuteur, etc." />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <FormField
@@ -392,8 +379,8 @@ const EditChildPage = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Éducateur assigné</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
+                    <Select
+                      onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -402,7 +389,7 @@ const EditChildPage = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {educators.map(educator => (
+                        {educators.map((educator) => (
                           <SelectItem key={educator.id} value={educator.id}>
                             {educator.name}
                           </SelectItem>
@@ -410,7 +397,8 @@ const EditChildPage = () => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Sélectionnez l'éducateur qui sera responsable de cet enfant
+                      Sélectionnez l'éducateur qui sera responsable de cet
+                      enfant
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -431,7 +419,8 @@ const EditChildPage = () => {
                     <div className="space-y-1 leading-none">
                       <FormLabel>Consentement média</FormLabel>
                       <FormDescription>
-                        Autorisation de partager des photos/vidéos de l'enfant avec les parents
+                        Autorisation de partager des photos/vidéos de l'enfant
+                        avec les parents
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -439,16 +428,14 @@ const EditChildPage = () => {
               />
 
               <div className="flex gap-4 justify-end">
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
-                  onClick={() => navigate('/children')}
+                  onClick={() => navigate("/children")}
                 >
                   Annuler
                 </Button>
-                <Button type="submit">
-                  Enregistrer les modifications
-                </Button>
+                <Button type="submit">Enregistrer les modifications</Button>
               </div>
             </form>
           </Form>

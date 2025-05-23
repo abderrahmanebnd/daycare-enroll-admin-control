@@ -9,7 +9,7 @@ import { admissionService } from "@/services/admissionService";
 import { messageService } from "@/services/messageService";
 import { notificationService } from "@/services/notificationService";
 import { Child, AdmissionRequest, Message, Notification, User } from "@/types";
-import ChildEducator from "@/components/children/ChildEducator";
+import ChildEducatorParent from "@/components/children/ChildEducatorParent";
 import { MOCK_USERS } from "@/services/mockData";
 
 const DashboardPage = () => {
@@ -17,6 +17,7 @@ const DashboardPage = () => {
   const navigate = useNavigate();
 
   const [children, setChildren] = useState<Child[]>([]);
+  console.log("Children data:", children);
   const [admissionRequests, setAdmissionRequests] = useState<
     AdmissionRequest[]
   >([]);
@@ -44,19 +45,19 @@ const DashboardPage = () => {
       // Fetch children data
       let childrenData: Child[] = [];
       if (user?.role === "parent") {
-        childrenData = await childService.getChildrenByParent(user.id);
-
+        childrenData = await childService.getMyChildren();
+        // console.log("Children data for parent:", childrenData);
         // Fetch educator data for each child
-        const educatorsMap: Record<string, User> = {};
-        for (const child of childrenData) {
-          if (child.educatorId) {
-            const educator = MOCK_USERS.find((u) => u.id === child.educatorId);
-            if (educator) {
-              educatorsMap[child.id] = educator;
-            }
-          }
-        }
-        setAssignedEducators(educatorsMap);
+        // const educatorsMap: Record<string, User> = {};
+        // for (const child of childrenData) {
+        //   if (child.educatorId) {
+        //     const educator = MOCK_USERS.find((u) => u.id === child.educatorId);
+        //     if (educator) {
+        //       educatorsMap[child.id] = educator;
+        //     }
+        //   }
+        // }
+        // setAssignedEducators(educatorsMap);
       } else {
         childrenData = await childService.getAllChildren();
       }
@@ -67,9 +68,7 @@ const DashboardPage = () => {
       if (user?.role === "admin") {
         requestsData = await admissionService.getPendingAdmissionRequests();
       } else if (user?.role === "parent") {
-        requestsData = await admissionService.getAdmissionRequestsByParentId(
-          user.id
-        );
+        requestsData = await admissionService.getAdmissionRequestsByParentId();
       }
       setAdmissionRequests(requestsData);
 
@@ -257,8 +256,8 @@ const DashboardPage = () => {
                       key={child.id}
                       className="border-b pb-4 last:border-0 last:pb-0"
                     >
-                      <h3 className="font-medium mb-2">{child.name}</h3>
-                      <ChildEducator educatorId={child.educatorId} />
+                      <h3 className="font-medium mb-2">{child.fullName}</h3>
+                      <ChildEducatorParent educator={child.educator} />
                     </div>
                   ))}
                 </div>
@@ -316,7 +315,9 @@ const DashboardPage = () => {
                         <h3 className="font-medium">{request.childName}</h3>
                         <p className="text-sm text-muted-foreground">
                           Date de naissance:{" "}
-                          {new Date(request.dob).toLocaleDateString("fr-FR")}
+                          {new Date(request.dateOfBirth).toLocaleDateString(
+                            "fr-FR"
+                          )}
                         </p>
                         <div className="flex gap-2 mt-2">
                           <Button

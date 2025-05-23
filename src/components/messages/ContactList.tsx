@@ -86,7 +86,7 @@ const ContactList = () => {
         );
       } else if (user?.role === "parent") {
         // First, get children to identify assigned educators
-        const children = await childService.getChildrenByParent(user.id);
+        const children = await childService.getMyChildren(user.id);
         setMyChildren(children);
 
         // Create a set of educator IDs assigned to my children
@@ -130,7 +130,7 @@ const ContactList = () => {
 
         // For educators, get children of each parent
         if (user.role === "educator" && contact.role === "parent") {
-          contact.children = await childService.getChildrenByParent(contact.id);
+          contact.children = await childService.getMyChildren(contact.id);
         }
       }
 

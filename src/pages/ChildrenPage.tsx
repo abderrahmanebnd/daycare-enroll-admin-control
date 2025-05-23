@@ -1,9 +1,8 @@
-
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import MainLayout from '@/components/layout/MainLayout';
-import ChildList from '@/components/children/ChildList';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import MainLayout from "@/components/layout/MainLayout";
+import ChildList from "@/components/children/ChildList";
 
 const ChildrenPage = () => {
   const { user, isLoading } = useAuth();
@@ -11,11 +10,11 @@ const ChildrenPage = () => {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      navigate('/login');
+      navigate("/login");
     }
-    
-    if (!isLoading && user?.role === 'parent') {
-      navigate('/my-children');
+
+    if (!isLoading && user?.role === "parent") {
+      navigate("/my-children");
     }
   }, [user, isLoading, navigate]);
 
@@ -27,7 +26,10 @@ const ChildrenPage = () => {
     <MainLayout>
       <div className="page-container">
         <h1 className="text-3xl font-bold mb-6">Gestion des enfants</h1>
-        <ChildList />
+        <ChildList
+          isEducatorView={user.role === "educator"}
+          isParentView={user.role === "parent"}
+        />
       </div>
     </MainLayout>
   );

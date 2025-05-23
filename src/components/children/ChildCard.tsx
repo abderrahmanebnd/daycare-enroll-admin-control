@@ -64,6 +64,7 @@ const ChildCard: React.FC<ChildCardProps> = ({
       .toUpperCase();
   };
 
+  console.log("ChildCard", child);
   return (
     <Card className="card-hover">
       <CardHeader className="flex flex-row items-center gap-4 pb-2">
@@ -100,7 +101,7 @@ const ChildCard: React.FC<ChildCardProps> = ({
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex gap-2 pt-2">
+      <CardFooter className="flex gap-2 pt-2 flex-wrap">
         <Button
           variant="default"
           className="w-full bg-daycare-primary hover:bg-daycare-primary/90"

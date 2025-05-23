@@ -55,7 +55,7 @@ const MediaGalleryPage = () => {
       // Different media access based on user role
       if (user.role === "parent") {
         // Get parent's children
-        const children = await childService.getChildrenByParent(user.id);
+        const children = await childService.getMyChildren(user.id);
         setUserChildren(children);
 
         // Get media for each child with consent
