@@ -1,64 +1,73 @@
-
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { admissionService } from '@/services/admissionService';
-import { AdmissionRequest, User } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { 
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { admissionService } from "@/services/admissionService";
+import { AdmissionRequest, User } from "@/types";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_USERS } from '@/services/mockData';
+import axiosPrivate from "@/axios/axios";
 
 interface AdmissionRequestListProps {
-  parentId?: string;
   showOnlyPending?: boolean;
 }
 
-const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({ 
-  parentId,
-  showOnlyPending = false 
+const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
+  showOnlyPending = false,
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [requests, setRequests] = useState<AdmissionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [educators, setEducators] = useState<User[]>([]);
-  const [selectedEducators, setSelectedEducators] = useState<Record<string, string>>({});
+  const [selectedEducators, setSelectedEducators] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     fetchRequests();
-    if (user?.role === 'admin') {
-      // Get all educators for the assignment dropdown
-      const educatorsList = MOCK_USERS.filter(user => user.role === 'educator');
-      setEducators(educatorsList);
+    if (user?.role === "admin") {
+      fetchEducators();
     }
-  }, [parentId, user]);
+  }, [user]);
+
+  const fetchEducators = async () => {
+    try {
+      const { data } = await axiosPrivate.get("/users?role=educator");
+      setEducators(data.users || []);
+    } catch (err) {
+      console.error("Failed to load educators:", err);
+    }
+  };
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
       let requestsData: AdmissionRequest[];
-      
-      if (parentId) {
-        requestsData = await admissionService.getAdmissionRequestsByParentId(parentId);
-      } else if (user?.role === 'parent') {
-        requestsData = await admissionService.getAdmissionRequestsByParentId(user.id);
+
+      if (user?.role === "parent") {
+        requestsData = await admissionService.getAdmissionRequestsByParentId();
       } else if (showOnlyPending) {
         requestsData = await admissionService.getPendingAdmissionRequests();
       } else {
         requestsData = await admissionService.getAllAdmissionRequests();
       }
-      
+
       setRequests(requestsData);
     } catch (error) {
-      console.error('Error fetching admission requests:', error);
+      console.error("Error fetching admission requests:", error);
     } finally {
       setLoading(false);
     }
@@ -74,35 +83,40 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
   const handleApproveRequest = async (id: string) => {
     try {
       if (!user) return;
-      
-      // Check if an educator is selected for this request
+
       const educatorId = selectedEducators[id];
       if (!educatorId) {
         toast({
-          title: 'Sélection requise',
-          description: 'Veuillez sélectionner un éducateur pour cet enfant.',
-          variant: 'destructive',
+          title: "Sélection requise",
+          description: "Veuillez sélectionner un éducateur pour cet enfant.",
+          variant: "destructive",
         });
         return;
       }
-      
-      await admissionService.updateAdmissionStatus(id, 'approved', user.id, educatorId);
-      
-      // Update local state
-      setRequests(requests.map(req => 
-        req.id === id ? { ...req, status: 'approved' } : req
-      ));
-      
+
+      await admissionService.updateAdmissionStatus(
+        id,
+        "accepted",
+        user.id,
+        educatorId
+      );
+
+      setRequests(
+        requests.map((req) =>
+          req.id === id ? { ...req, status: "accepted" } : req
+        )
+      );
+
       toast({
-        title: 'Demande approuvée',
-        description: 'La demande d\'admission a été approuvée avec succès.',
+        title: "Demande approuvée",
+        description: "La demande d'admission a été approuvée avec succès.",
       });
     } catch (error) {
-      console.error('Error approving request:', error);
+      console.error("Error approving request:", error);
       toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de l\'approbation de la demande.',
-        variant: 'destructive',
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'approbation.",
+        variant: "destructive",
       });
     }
   };
@@ -110,49 +124,50 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
   const handleRejectRequest = async (id: string) => {
     try {
       if (!user) return;
-      
-      await admissionService.updateAdmissionStatus(id, 'rejected', user.id);
-      
-      // Update local state
-      setRequests(requests.map(req => 
-        req.id === id ? { ...req, status: 'rejected' } : req
-      ));
-      
+
+      await admissionService.updateAdmissionStatus(id, "rejected", user.id);
+
+      setRequests(
+        requests.map((req) =>
+          req.id === id ? { ...req, status: "rejected" } : req
+        )
+      );
+
       toast({
-        title: 'Demande refusée',
-        description: 'La demande d\'admission a été refusée.',
+        title: "Demande refusée",
+        description: "La demande a été refusée avec succès.",
       });
     } catch (error) {
-      console.error('Error rejecting request:', error);
+      console.error("Error rejecting request:", error);
       toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors du refus de la demande.',
-        variant: 'destructive',
+        title: "Erreur",
+        description: "Une erreur est survenue lors du refus.",
+        variant: "destructive",
       });
     }
   };
 
   const getBadgeColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-amber-100 text-amber-800 hover:bg-amber-200';
-      case 'approved':
-        return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 hover:bg-red-200';
+      case "pending":
+        return "bg-amber-100 text-amber-800 hover:bg-amber-200";
+      case "accepted":
+        return "bg-green-100 text-green-800 hover:bg-green-200";
+      case "rejected":
+        return "bg-red-100 text-red-800 hover:bg-red-200";
       default:
-        return '';
+        return "";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'En attente';
-      case 'approved':
-        return 'Approuvée';
-      case 'rejected':
-        return 'Refusée';
+      case "pending":
+        return "En attente";
+      case "accepted":
+        return "Approuvée";
+      case "rejected":
+        return "Refusée";
       default:
         return status;
     }
@@ -170,14 +185,14 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
     return (
       <div className="text-center p-8 bg-muted/20 rounded-lg">
         <p className="text-muted-foreground">
-          {user?.role === 'admin' 
-            ? 'Aucune demande d\'admission à traiter' 
-            : 'Vous n\'avez pas encore soumis de demande d\'admission'}
+          {user?.role === "admin"
+            ? "Aucune demande d'admission à traiter"
+            : "Vous n'avez pas encore soumis de demande d'admission"}
         </p>
-        {user?.role === 'parent' && (
-          <Button 
+        {user?.role === "parent" && (
+          <Button
             className="mt-4 bg-daycare-primary hover:bg-daycare-primary/90"
-            onClick={() => window.location.href = '/my-admissions/new'}
+            onClick={() => (window.location.href = "/my-admissions/new")}
           >
             Soumettre une demande
           </Button>
@@ -198,45 +213,53 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Date de naissance: {new Date(request.dob).toLocaleDateString('fr-FR')}
+              Date de naissance:{" "}
+              {new Date(request.dateOfBirth).toLocaleDateString("fr-FR")}
             </p>
           </CardHeader>
           <CardContent className="pt-2">
             <div className="grid grid-cols-1 gap-2 text-sm">
               <div>
                 <p className="font-medium">Allergies:</p>
-                <p className="text-muted-foreground">{request.allergies || 'Aucune'}</p>
+                <p className="text-muted-foreground">
+                  {request.allergies || "Aucune"}
+                </p>
               </div>
               <div>
                 <p className="font-medium">Besoins spéciaux:</p>
-                <p className="text-muted-foreground">{request.specialNeeds || 'Aucun'}</p>
+                <p className="text-muted-foreground">
+                  {request.specialNeeds || "Aucun"}
+                </p>
               </div>
               <div>
                 <p className="font-medium">Consentement média:</p>
                 <p className="text-muted-foreground">
-                  {request.mediaConsent ? 'Accordé' : 'Non accordé'}
+                  {request.mediaConsent ? "Accordé" : "Non accordé"}
                 </p>
               </div>
               <div>
                 <p className="font-medium">Date de soumission:</p>
                 <p className="text-muted-foreground">
-                  {new Date(request.createdAt).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
+                  {new Date(request.createdAt).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
                   })}
                 </p>
               </div>
             </div>
           </CardContent>
-          {user?.role === 'admin' && request.status === 'pending' && (
+
+          {user?.role === "admin" && request.status === "pending" && (
             <CardFooter className="pt-2 flex flex-col gap-2">
               <div className="w-full mb-2">
                 <label className="text-sm font-medium mb-1 block">
                   Assigner un éducateur:
                 </label>
-                <Select 
-                  onValueChange={(value) => handleSelectEducator(request.id, value)}
+                <Select
+                  onValueChange={(value) =>
+                    handleSelectEducator(request.id, value)
+                  }
                   value={selectedEducators[request.id] || ""}
                 >
                   <SelectTrigger className="w-full">
@@ -244,7 +267,10 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {educators.map((educator) => (
-                      <SelectItem key={educator.id} value={educator.id}>
+                      <SelectItem
+                        key={educator.id}
+                        value={educator.id.toString()}
+                      >
                         {educator.name}
                       </SelectItem>
                     ))}
@@ -252,14 +278,14 @@ const AdmissionRequestList: React.FC<AdmissionRequestListProps> = ({
                 </Select>
               </div>
               <div className="flex gap-2 w-full">
-                <Button 
-                  variant="default" 
+                <Button
+                  variant="default"
                   className="w-full bg-daycare-secondary hover:bg-daycare-secondary/90"
                   onClick={() => handleApproveRequest(request.id)}
                 >
                   Approuver
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   className="w-full border-red-300 text-red-600 hover:bg-red-50"
                   onClick={() => handleRejectRequest(request.id)}

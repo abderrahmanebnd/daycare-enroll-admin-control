@@ -1,127 +1,66 @@
+import { AdmissionRequest, AdmissionStatus } from "@/types";
+import axiosPrivate from "@/axios/axios";
+import { notificationService } from "./notificationService";
 
-import { AdmissionRequest, AdmissionStatus } from '@/types';
-import { MOCK_ADMISSION_REQUESTS } from './mockData';
-import { childService } from './childService';
-import { notificationService } from './notificationService';
-
-// Mock service for admission requests
 class AdmissionService {
-  private admissionRequests: AdmissionRequest[] = [...MOCK_ADMISSION_REQUESTS];
-
   async getAllAdmissionRequests(): Promise<AdmissionRequest[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return [...this.admissionRequests];
+    const { data } = await axiosPrivate.get("/admissions");
+    return data.data;
   }
 
   async getPendingAdmissionRequests(): Promise<AdmissionRequest[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return this.admissionRequests.filter(request => request.status === 'pending');
+    const { data } = await axiosPrivate.get("/admissions?status=pending");
+    return data.data;
   }
 
-  async getAdmissionRequestById(id: string): Promise<AdmissionRequest | undefined> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return this.admissionRequests.find(request => request.id === id);
+  async getAdmissionRequestById(id: string): Promise<AdmissionRequest> {
+    const { data } = await axiosPrivate.get(`/admissions/${id}`);
+    return data.data;
   }
 
-  async getAdmissionRequestsByParentId(parentId: string): Promise<AdmissionRequest[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return this.admissionRequests.filter(request => request.parentId === parentId);
+  async getAdmissionRequestsByParentId(): Promise<AdmissionRequest[]> {
+    // Assuming backend uses req.user from JWT to determine parent
+    const { data } = await axiosPrivate.get("/admissions/me");
+    console.log("Admission requests for parent:", data);
+    return data.data;
   }
 
-  async createAdmissionRequest(request: Omit<AdmissionRequest, 'id' | 'status' | 'createdAt'>): Promise<AdmissionRequest> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const newRequest: AdmissionRequest = {
-      ...request,
-      id: (this.admissionRequests.length + 1).toString(),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-    
-    this.admissionRequests.push(newRequest);
-    
-    // Notify admin about new request (in a real app, this would be done on the server)
+  async createAdmissionRequest(
+    request: Omit<AdmissionRequest, "id" | "status" | "createdAt">
+  ): Promise<AdmissionRequest> {
+    const { data } = await axiosPrivate.post("/admissions", request);
+
+    // Optionally trigger notification on backend instead of frontend
     await notificationService.createNotification({
-      title: 'Nouvelle demande d\'admission',
-      content: `Une nouvelle demande d'admission a été soumise pour ${newRequest.childName}.`,
-      targetRole: 'admin',
+      title: "Nouvelle demande d'admission",
+      content: `Une nouvelle demande d'admission a été soumise pour ${request.childName}.`,
+      targetRole: "admin",
       read: false,
       createdBy: request.parentId,
     });
-    
-    return newRequest;
+
+    return data;
   }
 
   async updateAdmissionStatus(
-    id: string, 
-    status: AdmissionStatus, 
+    id: string,
+    status: AdmissionStatus,
     adminId: string,
     educatorId?: string
-  ): Promise<AdmissionRequest | undefined> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const index = this.admissionRequests.findIndex(request => request.id === id);
-    
-    if (index === -1) {
-      return undefined;
-    }
-    
-    const updatedRequest: AdmissionRequest = {
-      ...this.admissionRequests[index],
-      status,
-    };
-    
-    this.admissionRequests[index] = updatedRequest;
-    
-    // If approved, create a child record
-    if (status === 'approved') {
-      await childService.createChild({
-        name: updatedRequest.childName,
-        dob: updatedRequest.dob,
-        allergies: updatedRequest.allergies,
-        specialNeeds: updatedRequest.specialNeeds,
-        parentId: updatedRequest.parentId,
-        mediaConsent: updatedRequest.mediaConsent,
-        educatorId: educatorId, // Add the assigned educator
-      });
-      
-      // Notify parent about approval
-      await notificationService.createNotification({
-        title: 'Demande d\'admission approuvée',
-        content: `Votre demande d'admission pour ${updatedRequest.childName} a été approuvée.`,
-        targetUserId: updatedRequest.parentId,
-        read: false,
-        createdBy: adminId,
-      });
+  ): Promise<AdmissionRequest> {
+    const payload: any = { decision: status };
 
-      // If an educator was assigned, notify them too
-      if (educatorId) {
-        await notificationService.createNotification({
-          title: 'Nouvel enfant assigné',
-          content: `Un nouvel enfant (${updatedRequest.childName}) a été assigné à votre groupe.`,
-          targetUserId: educatorId,
-          read: false,
-          createdBy: adminId,
-        });
-      }
-    } else if (status === 'rejected') {
-      // Notify parent about rejection
-      await notificationService.createNotification({
-        title: 'Demande d\'admission refusée',
-        content: `Votre demande d'admission pour ${updatedRequest.childName} a été refusée. Veuillez nous contacter pour plus d'informations.`,
-        targetUserId: updatedRequest.parentId,
-        read: false,
-        createdBy: adminId,
-      });
+    if (status === "approved" && educatorId) {
+      payload.educatorId = educatorId;
     }
-    
-    return updatedRequest;
+
+    const { data } = await axiosPrivate.patch(
+      `/admissions/${id}/decision`,
+      payload
+    );
+
+    // Notifications can still be sent from frontend if needed
+    return data;
   }
 }
 

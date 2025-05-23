@@ -1,5 +1,4 @@
-
-export type UserRole = 'admin' | 'educator' | 'parent';
+export type UserRole = "admin" | "educator" | "parent";
 
 export interface User {
   id: string;
@@ -16,17 +15,18 @@ export interface Child {
   allergies: string;
   specialNeeds: string;
   parentId: string;
-  educatorId?: string;  // New field for assigned educator
+  educatorId?: string; // New field for assigned educator
   mediaConsent: boolean;
   profilePicture?: string;
   createdAt: string;
 }
 
-export type AdmissionStatus = 'pending' | 'approved' | 'rejected';
+export type AdmissionStatus = "pending" | "approved" | "rejected";
 
 export interface AdmissionRequest {
   id: string;
   childName: string;
+  gender: string;
   dob: string;
   allergies: string;
   specialNeeds: string;
@@ -63,5 +63,5 @@ export interface Media {
   description?: string;
   uploadedBy: string;
   createdAt: string;
-  type: 'photo' | 'video';
+  type: "photo" | "video";
 }
