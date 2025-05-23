@@ -41,7 +41,7 @@ const AdmissionRequestForm = () => {
       await admissionService.createAdmissionRequest({
         childName,
         gender,
-        dob: new Date(dob).toISOString(),
+        dateOfBirth: new Date(dob).toISOString(),
         allergies,
         specialNeeds,
         parentId: user.id,

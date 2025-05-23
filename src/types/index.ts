@@ -27,7 +27,7 @@ export interface AdmissionRequest {
   id: string;
   childName: string;
   gender: string;
-  dob: string;
+  dateOfBirth: string;
   allergies: string;
   specialNeeds: string;
   parentId: string;
