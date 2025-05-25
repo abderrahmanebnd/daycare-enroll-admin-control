@@ -98,11 +98,11 @@ const MessageList: React.FC<MessageListProps> = ({ recipientId }) => {
       minute: "2-digit",
     });
   };
-  // useEffect(() => {
-  //   if (user?.id) {
-  //     socket.emit("register", user.id);
-  //   }
-  // }, [user]);
+  useEffect(() => {
+    if (user?.id) {
+      socket.emit("register", user.id);
+    }
+  }, [user]);
 
   useEffect(() => {
     socket.on("newMessage", (message: Message) => {

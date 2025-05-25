@@ -1,55 +1,87 @@
-
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { notificationService } from '@/services/notificationService';
-import { Notification } from '@/types';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { notificationService } from "@/services/notificationService";
+import { Notification } from "@/types";
+import { io, Socket } from "socket.io-client";
 
 const NotificationBell = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
+
+      // Setup socket connection
+      const socketIo = io("http://localhost:3000", {
+        withCredentials: true,
+      });
+
+      socketIo.on("connect", () => {
+        // Register this user to the backend socket
+        socketIo.emit("register", user.id);
+      });
+
+      // Listen for real-time notifications
+      socketIo.on("notification", (notification: Notification) => {
+        setNotifications((prev) => [notification, ...prev]);
+      });
+
+      setSocket(socketIo);
+
+      // Cleanup on unmount
+      return () => {
+        socketIo.disconnect();
+      };
     }
   }, [user]);
 
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const userNotifications = await notificationService.getNotificationsByUserId(user!.id);
+      const userNotifications =
+        await notificationService.getNotificationsByUserId();
       setNotifications(userNotifications);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error("Error fetching notifications:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       await notificationService.markAsRead(notification.id);
-      setNotifications(notifications.map(n => 
-        n.id === notification.id ? { ...n, read: true } : n
-      ));
+      setNotifications((notifications) =>
+        notifications.map((n) =>
+          n.id === notification.id ? { ...n, read: true } : n
+        )
+      );
     }
-    
-    navigate('/notifications');
+
+    navigate("/notifications");
   };
 
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead(user!.id);
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotifications((notifications) =>
+        notifications.map((n) => ({ ...n, read: true }))
+      );
     } catch (error) {
-      console.error('Error marking notifications as read:', error);
+      console.error("Error marking notifications as read:", error);
     }
   };
 
@@ -76,15 +108,19 @@ const NotificationBell = () => {
         </div>
         <div className="max-h-80 overflow-auto">
           {loading ? (
-            <div className="p-4 text-center text-muted-foreground">Chargement...</div>
+            <div className="p-4 text-center text-muted-foreground">
+              Chargement...
+            </div>
           ) : notifications.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground">Aucune notification</div>
+            <div className="p-4 text-center text-muted-foreground">
+              Aucune notification
+            </div>
           ) : (
             notifications.slice(0, 5).map((notification) => (
               <div
                 key={notification.id}
                 className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
-                  !notification.read ? 'bg-muted/20' : ''
+                  !notification.read ? "bg-muted/20" : ""
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -98,13 +134,16 @@ const NotificationBell = () => {
                   {notification.content}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {new Date(notification.createdAt).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {new Date(notification.createdAt).toLocaleDateString(
+                    "fr-FR",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
                 </p>
               </div>
             ))
@@ -112,7 +151,11 @@ const NotificationBell = () => {
         </div>
         {notifications.length > 5 && (
           <div className="p-3 text-center border-t">
-            <Button variant="link" size="sm" onClick={() => navigate('/notifications')}>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => navigate("/notifications")}
+            >
               Voir toutes les notifications
             </Button>
           </div>

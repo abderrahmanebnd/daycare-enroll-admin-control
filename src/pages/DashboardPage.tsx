@@ -126,35 +126,37 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="card-hover bg-gradient-to-br from-daycare-secondary to-daycare-secondary/80 text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Demandes d'admission</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold mb-2">
-                {admissionRequests.length}
-              </p>
-              <p className="text-sm opacity-80">
-                {user.role === "admin"
-                  ? "En attente de validation"
-                  : "Demandes soumises"}
-              </p>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="mt-4 bg-white text-daycare-secondary hover:bg-white/90"
-                onClick={() =>
-                  navigate(
-                    user.role === "parent" ? "/my-admissions" : "/admissions"
-                  )
-                }
-              >
-                {user.role === "parent"
-                  ? "Voir mes demandes"
-                  : "Traiter les demandes"}
-              </Button>
-            </CardContent>
-          </Card>
+          {user.role !== "educator" && (
+            <Card className="card-hover bg-gradient-to-br from-daycare-secondary to-daycare-secondary/80 text-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Demandes d'admission</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold mb-2">
+                  {admissionRequests.length}
+                </p>
+                <p className="text-sm opacity-80">
+                  {user.role === "admin"
+                    ? "En attente de validation"
+                    : "Demandes soumises"}
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-4 bg-white text-daycare-secondary hover:bg-white/90"
+                  onClick={() =>
+                    navigate(
+                      user.role === "parent" ? "/my-admissions" : "/admissions"
+                    )
+                  }
+                >
+                  {user.role === "parent"
+                    ? "Voir mes demandes"
+                    : "Traiter les demandes"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="card-hover bg-gradient-to-br from-daycare-accent to-daycare-accent/80 text-daycare-dark">
             <CardHeader className="pb-2">
@@ -296,7 +298,7 @@ const DashboardPage = () => {
             </Card>
           )}
 
-          {user.role === "admin" && (
+          {/* {user.role === "admin" && (
             <Card>
               <CardHeader>
                 <CardTitle>Demandes d'admission en attente</CardTitle>
@@ -343,7 +345,7 @@ const DashboardPage = () => {
                 )}
               </CardContent>
             </Card>
-          )}
+          )} */}
 
           {user.role === "educator" && (
             <Card>

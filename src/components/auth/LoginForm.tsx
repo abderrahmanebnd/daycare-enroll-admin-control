@@ -1,40 +1,39 @@
-
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const LoginForm = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       await login(email, password);
       toast({
-        title: 'Connexion réussie',
-        description: 'Vous êtes maintenant connecté.',
+        title: "Connexion réussie",
+        description: "Vous êtes maintenant connecté.",
       });
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
-      setError('Identifiants invalides. Veuillez réessayer.');
+      setError("Identifiants invalides. Veuillez réessayer.");
       toast({
-        title: 'Erreur de connexion',
-        description: 'Identifiants invalides. Veuillez réessayer.',
-        variant: 'destructive',
+        title: "Erreur de connexion",
+        description: "Identifiants invalides. Veuillez réessayer.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -57,7 +56,10 @@ const LoginForm = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="password">Mot de passe</Label>
-          <Link to="/forgot-password" className="text-xs text-daycare-primary hover:underline">
+          <Link
+            to="/forgot-password"
+            className="text-xs text-daycare-primary hover:underline"
+          >
             Mot de passe oublié?
           </Link>
         </div>
@@ -71,23 +73,27 @@ const LoginForm = () => {
         />
       </div>
       {error && <p className="text-destructive text-sm">{error}</p>}
-      <Button type="submit" className="w-full bg-daycare-primary hover:bg-daycare-primary/90" disabled={isLoading}>
-        {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+      <Button
+        type="submit"
+        className="w-full bg-daycare-primary hover:bg-daycare-primary/90"
+        disabled={isLoading}
+      >
+        {isLoading ? "Connexion en cours..." : "Se connecter"}
       </Button>
       <div className="text-center text-sm">
         <p>
-          Pas encore de compte?{' '}
+          Pas encore de compte?{" "}
           <Link to="/register" className="text-daycare-primary hover:underline">
             S'inscrire
           </Link>
         </p>
-        <div className="mt-4 text-xs text-muted-foreground">
+        {/* <div className="mt-4 text-xs text-muted-foreground">
           <p>Utilisez ces identifiants pour tester:</p>
           <p>Admin: admin@example.com</p>
           <p>Educator: educator@example.com</p>
           <p>Parent: parent@example.com</p>
           <p>(mot de passe: n'importe quoi)</p>
-        </div>
+        </div> */}
       </div>
     </form>
   );
