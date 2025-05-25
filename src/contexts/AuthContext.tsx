@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole } from "@/types";
 import axiosPrivate from "@/axios/axios";
+import socket from "@/services/socket";
 
 interface AuthContextType {
   user: User | null;
@@ -23,6 +24,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      socket.emit("register", user.id);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Check if user is already logged in

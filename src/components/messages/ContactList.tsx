@@ -4,10 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { messageService } from "@/services/messageService";
 import { childService } from "@/services/childService";
 import { Message, User, Child } from "@/types";
-import { MOCK_USERS } from "@/services/mockData";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import axiosPrivate from "@/axios/axios";
 
 interface Contact extends User {
   lastMessage?: Message;
@@ -21,169 +20,87 @@ const ContactList = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedContactId, setSelectedContactId] = useState<string | null>(
     null
   );
-  const [myChildren, setMyChildren] = useState<Child[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchContacts();
-    }
+    if (user) fetchContacts();
   }, [user]);
 
   useEffect(() => {
-    // Get selected contact from URL params
     const params = new URLSearchParams(location.search);
     const contactId = params.get("contactId");
-    const parentId = params.get("parentId");
-    if (contactId) {
-      setSelectedContactId(contactId);
-    } else if (parentId) {
-      setSelectedContactId(parentId);
-    }
+    if (contactId) setSelectedContactId(contactId);
   }, [location.search]);
-
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredContacts(contacts);
-    } else {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      const filtered = contacts.filter(
-        (contact) =>
-          contact.name.toLowerCase().includes(lowerSearchTerm) ||
-          (contact.children &&
-            contact.children.some((child) =>
-              child.name.toLowerCase().includes(lowerSearchTerm)
-            ))
-      );
-      setFilteredContacts(filtered);
-    }
-  }, [searchTerm, contacts]);
 
   const fetchContacts = async () => {
     try {
       setLoading(true);
+      const { data } = await axiosPrivate.get("/users/contacts");
+      let userContacts: Contact[] = data.contacts.map((u: User) => ({
+        ...u,
+        unreadCount: 0,
+      }));
 
-      let userContacts: Contact[] = [];
-
-      if (user?.role === "admin") {
-        // Admin can message all users
-        userContacts = MOCK_USERS.filter((u) => u.id !== user.id).map((u) => ({
-          ...u,
-          unreadCount: 0,
-        }));
-      } else if (user?.role === "educator") {
-        // Educators can message parents
-        userContacts = MOCK_USERS.filter((u) => u.role === "parent").map(
-          (u) => ({
-            ...u,
-            unreadCount: 0,
-          })
+      if (user?.role === "parent") {
+        const myChildren = await childService.getMyChildren();
+        const educatorIds = new Set(
+          myChildren.map((c) => c.educatorId).filter(Boolean)
         );
-      } else if (user?.role === "parent") {
-        // First, get children to identify assigned educators
-        const children = await childService.getMyChildren(user.id);
-        setMyChildren(children);
-
-        // Create a set of educator IDs assigned to my children
-        const assignedEducatorIds = new Set(
-          children
-            .filter((child) => child.educatorId)
-            .map((child) => child.educatorId)
-        );
-
-        // Parents can message admins and educators
-        userContacts = MOCK_USERS.filter(
-          (u) => u.role === "admin" || u.role === "educator"
-        ).map((u) => ({
+        userContacts = userContacts.map((u) => ({
           ...u,
-          unreadCount: 0,
-          isAssignedEducator:
-            u.role === "educator" && assignedEducatorIds.has(u.id),
+          isAssignedEducator: u.role === "educator" && educatorIds.has(u.id),
         }));
       }
 
-      // Get last messages and unread counts
-      for (let contact of userContacts) {
-        const conversation = await messageService.getConversation(
-          user.id,
-          contact.id
-        );
+      if (user?.role === "educator") {
+        for (const contact of userContacts) {
+          if (contact.role === "parent") {
+            contact.children = await childService.getMyChildren(contact.id);
+          }
+        }
+      }
 
-        if (conversation.length > 0) {
-          // Sort by date (newest first) and get the first one
-          conversation.sort(
+      for (const contact of userContacts) {
+        const convo = await messageService.getConversation(contact.id);
+        if (convo.length > 0) {
+          convo.sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
-          contact.lastMessage = conversation[0];
-
-          // Count unread messages
-          contact.unreadCount = conversation.filter(
-            (m) => m.receiverId === user.id && !m.read
+          contact.lastMessage = convo[0];
+          contact.unreadCount = convo.filter(
+            (m) => m.receiverId === user?.id && !m.read
           ).length;
-        }
-
-        // For educators, get children of each parent
-        if (user.role === "educator" && contact.role === "parent") {
-          contact.children = await childService.getMyChildren(contact.id);
         }
       }
 
-      // Sort contacts: first assigned educators, then by unread messages, then by most recent message
-      userContacts.sort((a, b) => {
-        // First, prioritize assigned educators
-        if (a.isAssignedEducator !== b.isAssignedEducator) {
-          return a.isAssignedEducator ? -1 : 1;
-        }
-
-        // Then sort by unread messages
-        if (a.unreadCount !== b.unreadCount) {
-          return b.unreadCount - a.unreadCount;
-        }
-
-        // Finally sort by most recent message
-        if (!a.lastMessage && !b.lastMessage) return 0;
-        if (!a.lastMessage) return 1;
-        if (!b.lastMessage) return -1;
-
-        return (
-          new Date(b.lastMessage.createdAt).getTime() -
-          new Date(a.lastMessage.createdAt).getTime()
-        );
-      });
-
       setContacts(userContacts);
-      setFilteredContacts(userContacts);
 
-      // If there's no selected contact, select the first one
       if (!selectedContactId && userContacts.length > 0) {
         setSelectedContactId(userContacts[0].id);
         navigate(`/messages?contactId=${userContacts[0].id}`);
       }
-    } catch (error) {
-      console.error("Error fetching contacts:", error);
+    } catch (err) {
+      console.error("Error fetching contacts:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSelectContact = (contactId: string) => {
-    setSelectedContactId(contactId);
-    navigate(`/messages?contactId=${contactId}`);
+  const handleSelectContact = (id: string) => {
+    setSelectedContactId(id);
+    navigate(`/messages?contactId=${id}`);
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(" ")
-      .map((part) => part[0])
+      .map((n) => n[0])
       .join("")
       .toUpperCase();
-  };
 
   if (loading) {
     return (
@@ -195,23 +112,13 @@ const ContactList = () => {
 
   return (
     <div className="h-full flex flex-col border-r">
-      <div className="p-4 border-b">
-        <Input
-          placeholder="Rechercher un contact..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
       <div className="flex-1 overflow-y-auto">
-        {filteredContacts.length === 0 ? (
+        {contacts.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">
-            {searchTerm
-              ? "Aucun contact ne correspond à votre recherche"
-              : "Aucun contact disponible"}
+            Aucun contact disponible
           </div>
         ) : (
-          filteredContacts.map((contact) => (
+          contacts.map((contact) => (
             <Button
               key={contact.id}
               variant="ghost"
@@ -251,15 +158,15 @@ const ContactList = () => {
                   <p className="text-xs text-muted-foreground capitalize">
                     {contact.role}
                   </p>
-                  {contact.children && contact.children.length > 0 && (
+                  {contact.children?.length > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Enfant(s):{" "}
-                      {contact.children.map((c) => c.name).join(", ")}
+                      {contact.children.map((c) => c.fullName).join(", ")}
                     </p>
                   )}
                   {contact.lastMessage && (
                     <p className="text-sm text-muted-foreground mt-1 truncate">
-                      {contact.lastMessage.senderId === user!.id
+                      {contact.lastMessage.senderId === user?.id
                         ? "Vous: "
                         : ""}
                       {contact.lastMessage.content}

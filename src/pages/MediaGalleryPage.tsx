@@ -3,90 +3,50 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { mediaService } from "@/services/mediaService";
 import { childService } from "@/services/childService";
-import { Media, Child, User } from "@/types";
+import { Media, Child } from "@/types";
 import MainLayout from "@/components/layout/MainLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MOCK_USERS } from "@/services/mockData";
 import AddMediaForm from "@/components/media/AddMediaForm";
 
 const MediaGalleryPage = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+
   const [media, setMedia] = useState<Media[]>([]);
-  const [userChildren, setUserChildren] = useState<Child[]>([]);
+  const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredMedia, setFilteredMedia] = useState<Media[]>([]);
 
   useEffect(() => {
     if (!isLoading && !user) {
       navigate("/login");
-      return;
+    } else if (user) {
+      fetchData();
     }
-
-    fetchData();
-  }, [user, isLoading, navigate]);
-
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredMedia(media);
-    } else {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      const filtered = media.filter(
-        (item) =>
-          item.description?.toLowerCase().includes(lowerSearchTerm) ||
-          getUserName(item.uploadedBy)
-            .toLowerCase()
-            .includes(lowerSearchTerm) ||
-          getChildName(item.childId).toLowerCase().includes(lowerSearchTerm)
-      );
-      setFilteredMedia(filtered);
-    }
-  }, [searchTerm, media]);
+  }, [user, isLoading]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      if (!user) return;
-
       let mediaData: Media[] = [];
+      let childrenData: Child[] = [];
 
-      // Different media access based on user role
-      if (user.role === "parent") {
-        // Get parent's children
-        const children = await childService.getMyChildren(user.id);
-        setUserChildren(children);
-
-        // Get media for each child with consent
-        const childrenWithConsent = children.filter(
-          (child) => child.mediaConsent
+      if (user?.role === "parent") {
+        childrenData = await childService.getMyChildren();
+        const consented = childrenData.filter((c) => c.mediaConsent);
+        const allMedia = await mediaService.getAllMedia();
+        mediaData = allMedia.filter((m) =>
+          consented.some((c) => c.id === m.childId)
         );
-        const childIds = childrenWithConsent.map((child) => child.id);
-
-        if (childIds.length > 0) {
-          const allMedia = await mediaService.getAllMedia();
-          mediaData = allMedia.filter((m) => childIds.includes(m.childId));
-        }
-      } else if (user.role === "educator") {
-        // Get media uploaded by this educator
+      } else if (user?.role === "educator") {
         mediaData = await mediaService.getMediaByUploaderId(user.id);
-
-        // Also get all children to display names
-        const children = await childService.getAllChildren();
-        setUserChildren(children);
-      } else if (user.role === "admin") {
-        // Admin sees all media
+        childrenData = await childService.getAllChildren();
+      } else if (user?.role === "admin") {
         mediaData = await mediaService.getAllMedia();
-
-        // Get all children to display names
-        const children = await childService.getAllChildren();
-        setUserChildren(children);
+        childrenData = await childService.getAllChildren();
       }
 
       setMedia(mediaData);
-      setFilteredMedia(mediaData);
+      setChildren(childrenData);
     } catch (error) {
       console.error("Error fetching media:", error);
     } finally {
@@ -94,18 +54,13 @@ const MediaGalleryPage = () => {
     }
   };
 
-  const getUserName = (userId: string): string => {
-    const foundUser = MOCK_USERS.find((u) => u.id === userId);
-    return foundUser ? foundUser.name : "Éducateur inconnu";
-  };
-
-  const getChildName = (childId: string): string => {
-    const child = userChildren.find((c) => c.id === childId);
+  const getChildName = (childId: number): string => {
+    const child = children.find((c) => c.id === childId);
     return child ? child.fullName : "Enfant inconnu";
   };
 
   const handleMediaAdded = () => {
-    fetchData(); // Refresh media data
+    fetchData();
   };
 
   if (isLoading || loading) {
@@ -128,28 +83,17 @@ const MediaGalleryPage = () => {
           )}
         </div>
 
-        <div className="mb-6">
-          <Input
-            placeholder="Rechercher par description, enfant ou éducateur..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-md"
-          />
-        </div>
-
-        {filteredMedia.length === 0 ? (
+        {media.length === 0 ? (
           <div className="text-center p-12 bg-muted/20 rounded-lg">
             <p className="text-muted-foreground">
-              {searchTerm
-                ? "Aucun média ne correspond à votre recherche"
-                : user?.role === "parent"
+              {user?.role === "parent"
                 ? "Aucun média disponible pour vos enfants"
                 : "Aucun média n'a été ajouté pour le moment"}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMedia.map((item) => (
+            {media.map((item) => (
               <div
                 key={item.id}
                 className="overflow-hidden rounded-lg border bg-card shadow-sm"
@@ -157,13 +101,13 @@ const MediaGalleryPage = () => {
                 <div className="relative aspect-video overflow-hidden">
                   {item.type === "photo" ? (
                     <img
-                      src={item.fileUrl}
-                      alt={item.description || "Image"}
+                      src={`http://localhost:3000${item.fileUrl}`}
+                      alt={item.title || "Image"}
                       className="h-full w-full object-cover transition-all hover:scale-105"
                     />
                   ) : (
                     <video
-                      src={item.fileUrl}
+                      src={`http://localhost:3000${item.fileUrl}`}
                       controls
                       className="h-full w-full object-cover"
                     />
@@ -179,10 +123,11 @@ const MediaGalleryPage = () => {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    {item.description}
+                    {item.title}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Par: {getUserName(item.uploadedBy)}
+                  <p className="text-sm text-muted-foreground mb-2">
+                    <b className="text-black">Uploaded by: </b>
+                    {item.uploader.name}
                   </p>
                 </div>
               </div>

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,8 +25,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { childService } from "@/services/childService";
 import { MOCK_USERS } from "@/services/mockData";
-import { Child } from "@/types";
+import { Child, User } from "@/types";
 import { Plus } from "lucide-react";
+import axios from "axios";
+import axiosPrivate from "@/axios/axios";
 
 const childFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
@@ -50,6 +51,8 @@ interface AddChildFormProps {
 const AddChildForm: React.FC<AddChildFormProps> = ({ onChildAdded }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [parents, setParents] = useState<User[]>([]);
+  const [educators, setEducators] = useState<User[]>([]);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof childFormSchema>>({
@@ -67,13 +70,39 @@ const AddChildForm: React.FC<AddChildFormProps> = ({ onChildAdded }) => {
     },
   });
 
-  const parents = MOCK_USERS.filter(user => user.role === "parent");
-  const educators = MOCK_USERS.filter(user => user.role === "educator");
+  async function fetchParents() {
+    const { data } = await axiosPrivate.get("/users?role=parent");
+    return data.data;
+  }
+  async function fetchEducators() {
+    const { data } = await axiosPrivate.get("/users?role=educator");
+    return data.data;
+  }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const parentsData = await fetchParents();
+        setParents(parentsData);
+        const educatorsData = await fetchEducators();
+        setEducators(educatorsData);
+      } catch (error) {
+        console.error("Error fetching parents:", error);
+        toast({
+          title: "Erreur",
+          description:
+            "Une erreur est survenue lors de la récupération des parents et educators.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchData();
+  }, [toast]);
 
   const onSubmit = async (values: z.infer<typeof childFormSchema>) => {
     try {
       setIsLoading(true);
-      
+
       const childData: Omit<Child, "id" | "createdAt"> = {
         fullName: values.fullName,
         gender: values.gender,
@@ -83,18 +112,20 @@ const AddChildForm: React.FC<AddChildFormProps> = ({ onChildAdded }) => {
         specialNeeds: values.specialNeeds,
         parentId: values.parentId,
         educatorId: values.educatorId || undefined,
-        educator: values.educatorId ? educators.find(e => e.id === values.educatorId) || null : null,
-        parent: parents.find(p => p.id === values.parentId) || null,
+        educator: values.educatorId
+          ? educators.find((e) => e.id === values.educatorId) || null
+          : null,
+        parent: parents.find((p) => p.id === values.parentId) || null,
         mediaConsent: values.mediaConsent,
       };
 
       await childService.createChild(childData);
-      
+
       toast({
         title: "Enfant ajouté",
         description: `${values.fullName} a été ajouté avec succès.`,
       });
-      
+
       form.reset();
       setIsOpen(false);
       onChildAdded();
@@ -232,7 +263,10 @@ const AddChildForm: React.FC<AddChildFormProps> = ({ onChildAdded }) => {
                 <FormItem>
                   <FormLabel>Contact d'urgence</FormLabel>
                   <FormControl>
-                    <Input placeholder="Numéro de téléphone d'urgence" {...field} />
+                    <Input
+                      placeholder="Numéro de téléphone d'urgence"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -246,7 +280,10 @@ const AddChildForm: React.FC<AddChildFormProps> = ({ onChildAdded }) => {
                 <FormItem>
                   <FormLabel>Allergies</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Décrivez les allergies connues..." {...field} />
+                    <Textarea
+                      placeholder="Décrivez les allergies connues..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -260,7 +297,10 @@ const AddChildForm: React.FC<AddChildFormProps> = ({ onChildAdded }) => {
                 <FormItem>
                   <FormLabel>Besoins spéciaux</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Décrivez les besoins spéciaux..." {...field} />
+                    <Textarea
+                      placeholder="Décrivez les besoins spéciaux..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

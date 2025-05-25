@@ -1,50 +1,51 @@
-
-import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 const Sidebar = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const [activeItem, setActiveItem] = useState('');
+  const [activeItem, setActiveItem] = useState("");
 
   useEffect(() => {
-    const pathSegments = location.pathname.split('/');
-    setActiveItem(pathSegments[1] || 'dashboard');
+    const pathSegments = location.pathname.split("/");
+    setActiveItem(pathSegments[1] || "dashboard");
   }, [location]);
 
   const adminLinks = [
-    { name: 'Tableau de bord', path: '/dashboard', icon: '📊' },
-    { name: 'Demandes d\'admission', path: '/admissions', icon: '📝' },
-    { name: 'Enfants', path: '/children', icon: '👶' },
-    { name: 'Utilisateurs', path: '/users', icon: '👥' },
-    { name: 'Messages', path: '/messages', icon: '💬' },
-    { name: 'Notifications', path: '/notifications', icon: '🔔' },
+    { name: "Tableau de bord", path: "/dashboard", icon: "📊" },
+    { name: "Demandes d'admission", path: "/admissions", icon: "📝" },
+    { name: "Enfants", path: "/children", icon: "👶" },
+    { name: "Utilisateurs", path: "/users", icon: "👥" },
+    { name: "Messages", path: "/messages", icon: "💬" },
+    { name: "Média", path: "/media", icon: "📸" },
+
+    // { name: 'Notifications', path: '/notifications', icon: '🔔' },
   ];
 
   const educatorLinks = [
-    { name: 'Tableau de bord', path: '/dashboard', icon: '📊' },
-    { name: 'Enfants', path: '/children', icon: '👶' },
-    { name: 'Messages', path: '/messages', icon: '💬' },
-    { name: 'Média', path: '/media', icon: '📸' },
+    { name: "Tableau de bord", path: "/dashboard", icon: "📊" },
+    { name: "Enfants", path: "/children", icon: "👶" },
+    { name: "Messages", path: "/messages", icon: "💬" },
+    { name: "Média", path: "/media", icon: "📸" },
   ];
 
   const parentLinks = [
-    { name: 'Tableau de bord', path: '/dashboard', icon: '📊' },
-    { name: 'Mes enfants', path: '/my-children', icon: '👶' },
-    { name: 'Demandes d\'admission', path: '/my-admissions', icon: '📝' },
-    { name: 'Messages', path: '/messages', icon: '💬' },
-    { name: 'Média', path: '/media', icon: '📸' },
+    { name: "Tableau de bord", path: "/dashboard", icon: "📊" },
+    { name: "Mes enfants", path: "/my-children", icon: "👶" },
+    { name: "Demandes d'admission", path: "/my-admissions", icon: "📝" },
+    { name: "Messages", path: "/messages", icon: "💬" },
+    { name: "Média", path: "/media", icon: "📸" },
   ];
 
   const getLinks = () => {
     switch (user?.role) {
-      case 'admin':
+      case "admin":
         return adminLinks;
-      case 'educator':
+      case "educator":
         return educatorLinks;
-      case 'parent':
+      case "parent":
         return parentLinks;
       default:
         return [];
@@ -67,7 +68,7 @@ const Sidebar = () => {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors",
                 activeItem === link.path.substring(1)
-                  ? "bg-daycare-primary text-white" 
+                  ? "bg-daycare-primary text-white"
                   : "hover:bg-daycare-light hover:text-daycare-primary"
               )}
             >

@@ -1,19 +1,46 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { mediaService } from "@/services/mediaService";
 import { childService } from "@/services/childService";
 import { useAuth } from "@/contexts/AuthContext";
-import { Media, Child } from "@/types";
+import { MediaType, Child } from "@/types";
 import { Camera } from "lucide-react";
-import { mediaFormSchema, MediaFormData } from "./MediaFormSchema";
-import MediaFormFields from "./MediaFormFields";
-import MediaFormActions from "./MediaFormActions";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+  Form,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { z } from "zod";
+
+const schema = z.object({
+  title: z.string().min(1),
+  type: z.enum(["photo", "video"]),
+  childId: z.string().min(1),
+  file: z.any(),
+});
+
+type FormData = z.infer<typeof schema>;
 
 interface AddMediaFormProps {
   onMediaAdded: () => void;
@@ -21,71 +48,51 @@ interface AddMediaFormProps {
 
 const AddMediaForm: React.FC<AddMediaFormProps> = ({ onMediaAdded }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const form = useForm<MediaFormData>({
-    resolver: zodResolver(mediaFormSchema),
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema),
     defaultValues: {
       title: "",
-      description: "",
-      childId: "",
       type: "photo",
-      fileUrl: "",
-      uploadDate: new Date().toISOString().split('T')[0],
+      childId: "",
+      file: null,
     },
   });
 
   const handleDialogOpen = async (open: boolean) => {
     setIsOpen(open);
     if (open) {
-      try {
-        const childrenData = await childService.getAllChildren();
-        setChildren(childrenData);
-      } catch (error) {
-        console.error("Error fetching children:", error);
-      }
+      const data = await childService.getChildrenWithConsent();
+      setChildren(data);
     }
   };
 
-  const onSubmit = async (values: MediaFormData) => {
-    if (!user) return;
-
+  const onSubmit = async (values: FormData) => {
     try {
       setIsLoading(true);
-      
-      const mediaData: Omit<Media, "id" | "createdAt"> = {
-        fileUrl: values.fileUrl,
-        childId: values.childId,
-        description: `${values.title}${values.description ? ` - ${values.description}` : ''}`,
-        uploadedBy: user.id,
-        type: values.type,
-      };
 
-      await mediaService.addMedia(mediaData);
-      
-      toast({
-        title: "Média ajouté",
-        description: `${values.title} a été ajouté avec succès.`,
-      });
-      
-      form.reset({
-        title: "",
-        description: "",
-        childId: "",
-        type: "photo",
-        fileUrl: "",
-        uploadDate: new Date().toISOString().split('T')[0],
-      });
-      setIsOpen(false);
+      const formData = new FormData();
+      formData.append("title", values.title);
+      formData.append("type", values.type);
+      formData.append("childId", values.childId);
+      formData.append("file", values.file[0]);
+
+      await mediaService.addMedia(formData);
+
+      toast({ title: "Succès", description: "Média ajouté avec succès." });
+
+      form.reset();
       onMediaAdded();
+      setIsOpen(false);
     } catch (error) {
-      console.error("Error creating media:", error);
+      console.error("Erreur ajout média:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'ajout du média.",
+        description: "Échec de l'ajout du média.",
         variant: "destructive",
       });
     } finally {
@@ -103,18 +110,108 @@ const AddMediaForm: React.FC<AddMediaFormProps> = ({ onMediaAdded }) => {
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Ajouter un nouveau média</DialogTitle>
-          <DialogDescription>
-            Ajoutez une photo ou vidéo pour un enfant de la crèche.
-          </DialogDescription>
+          <DialogTitle>Ajouter un média</DialogTitle>
         </DialogHeader>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <MediaFormFields control={form.control} children={children} />
-            <MediaFormActions 
-              isLoading={isLoading} 
-              onCancel={() => setIsOpen(false)} 
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Titre</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
+
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Type</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="photo">Photo</SelectItem>
+                      <SelectItem value="video">Vidéo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="childId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Enfant</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez un enfant" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {children?.map((child) => (
+                        <SelectItem key={child.id} value={child.id.toString()}>
+                          {child.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="file"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fichier</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={(e) => field.onChange(e.target.files)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsOpen(false)}
+              >
+                Annuler
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Ajout..." : "Ajouter"}
+              </Button>
+            </div>
           </form>
         </Form>
       </DialogContent>

@@ -1,6 +1,7 @@
 import { Child } from "@/types";
 import { MOCK_CHILDREN } from "./mockData";
 import axiosPrivate from "@/axios/axios";
+import axios from "axios";
 
 // Mock service for child data
 class ChildService {
@@ -24,16 +25,8 @@ class ChildService {
 
   async createChild(child: Omit<Child, "id" | "createdAt">): Promise<Child> {
     // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const newChild: Child = {
-      ...child,
-      id: (this.children.length + 1).toString(),
-      createdAt: new Date().toISOString(),
-    };
-
-    this.children.push(newChild);
-    return newChild;
+    const { data } = await axiosPrivate.post("/users/children", child);
+    return data.data;
   }
 
   async updateChild(
@@ -53,6 +46,10 @@ class ChildService {
     this.children = this.children.filter((child) => child.id !== id);
 
     return this.children.length < initialLength;
+  }
+  async getChildrenWithConsent() {
+    const { data } = await axiosPrivate.get("/children/with-consent");
+    return data.data;
   }
 }
 
