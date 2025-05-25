@@ -4,7 +4,6 @@ import { messageService } from "@/services/messageService";
 import { Message, User } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import socket from "@/services/socket";
 import axiosPrivate from "@/axios/axios";
 
@@ -14,7 +13,6 @@ interface MessageListProps {
 
 const MessageList: React.FC<MessageListProps> = ({ recipientId }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -28,7 +26,6 @@ const MessageList: React.FC<MessageListProps> = ({ recipientId }) => {
       fetchMessages();
       socket.emit("joinRoom", { userId: user.id });
 
-      // Listen for real-time incoming messages
       socket.on("newMessage", (message: Message) => {
         if (
           (message.senderId === recipientId &&
@@ -48,7 +45,6 @@ const MessageList: React.FC<MessageListProps> = ({ recipientId }) => {
 
   const fetchRecipient = async () => {
     try {
-      console.log("Fetching recipient user:", recipientId);
       const { data } = await axiosPrivate.get(`/users/${recipientId}`);
       setRecipient(data.user);
     } catch (err) {
@@ -59,19 +55,8 @@ const MessageList: React.FC<MessageListProps> = ({ recipientId }) => {
   const fetchMessages = async () => {
     try {
       setLoading(true);
-      const conversation = await messageService.getConversation(
-        user!.id,
-        recipientId
-      );
+      const conversation = await messageService.getConversation(recipientId);
       setMessages(conversation);
-
-      const unreadMessages = conversation.filter(
-        (m) => m.receiverId === user!.id && !m.read
-      );
-
-      await Promise.all(
-        unreadMessages.map((m) => messageService.markAsRead(m.id))
-      );
     } catch (err) {
       console.error("Error fetching messages:", err);
     } finally {
@@ -89,22 +74,15 @@ const MessageList: React.FC<MessageListProps> = ({ recipientId }) => {
 
     try {
       setSending(true);
-
       const messagePayload = {
         senderId: user.id,
         receiverId: Number(recipientId),
         content: newMessage.trim(),
       };
-
-      socket.emit("sendMessage", messagePayload); // real-time
+      socket.emit("sendMessage", messagePayload);
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer le message.",
-        variant: "destructive",
-      });
     } finally {
       setSending(false);
     }
@@ -112,30 +90,31 @@ const MessageList: React.FC<MessageListProps> = ({ recipientId }) => {
 
   const formatMessageDate = (dateString: string) => {
     const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return `Aujourd'hui à ${date.toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return `Hier à ${date.toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-    } else {
-      return date.toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
+    return date.toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
+  // useEffect(() => {
+  //   if (user?.id) {
+  //     socket.emit("register", user.id);
+  //   }
+  // }, [user]);
+
+  useEffect(() => {
+    socket.on("newMessage", (message: Message) => {
+      console.log("📨 New message received via socket:", message);
+      setMessages((prev) => [...prev, message]);
+      scrollToBottom();
+    });
+
+    return () => {
+      socket.off("newMessage");
+    };
+  }, [user, recipientId]);
 
   if (loading) {
     return (

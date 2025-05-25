@@ -10,7 +10,6 @@ import axiosPrivate from "@/axios/axios";
 
 interface Contact extends User {
   lastMessage?: Message;
-  unreadCount: number;
   children?: Child[];
   isAssignedEducator?: boolean;
 }
@@ -41,7 +40,6 @@ const ContactList = () => {
       const { data } = await axiosPrivate.get("/users/contacts");
       let userContacts: Contact[] = data.contacts.map((u: User) => ({
         ...u,
-        unreadCount: 0,
       }));
 
       if (user?.role === "parent") {
@@ -58,7 +56,7 @@ const ContactList = () => {
       if (user?.role === "educator") {
         for (const contact of userContacts) {
           if (contact.role === "parent") {
-            contact.children = await childService.getMyChildren(contact.id);
+            contact.children = await childService.getMyChildren();
           }
         }
       }
@@ -71,9 +69,7 @@ const ContactList = () => {
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           contact.lastMessage = convo[0];
-          contact.unreadCount = convo.filter(
-            (m) => m.receiverId === user?.id && !m.read
-          ).length;
+          // removed unreadCount logic
         }
       }
 
@@ -149,11 +145,7 @@ const ContactList = () => {
                         </span>
                       )}
                     </span>
-                    {contact.unreadCount > 0 && (
-                      <span className="bg-daycare-primary text-white text-xs rounded-full px-2 py-1 ml-2">
-                        {contact.unreadCount}
-                      </span>
-                    )}
+                    {/* Removed unreadCount badge */}
                   </div>
                   <p className="text-xs text-muted-foreground capitalize">
                     {contact.role}

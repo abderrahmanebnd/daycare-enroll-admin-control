@@ -18,7 +18,7 @@ const Sidebar = () => {
     { name: "Demandes d'admission", path: "/admissions", icon: "📝" },
     { name: "Enfants", path: "/children", icon: "👶" },
     { name: "Utilisateurs", path: "/users", icon: "👥" },
-    { name: "Messages", path: "/messages", icon: "💬" },
+    // { name: "Messages", path: "/messages", icon: "💬" },
     { name: "Média", path: "/media", icon: "📸" },
 
     // { name: 'Notifications', path: '/notifications', icon: '🔔' },

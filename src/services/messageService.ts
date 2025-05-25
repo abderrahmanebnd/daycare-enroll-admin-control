@@ -22,14 +22,6 @@ class MessageService {
     return data.messages;
   }
 
-  async getConversation(userId1: string, userId2: string): Promise<Message[]> {
-    // Assuming your backend has a route to fetch conversation between two users
-    const { data } = await axiosPrivate.get(
-      `/messages/conversation/${userId1}/${userId2}`
-    );
-    return data.messages;
-  }
-
   async createMessage(
     message: Omit<Message, "id" | "seen" | "createdAt">
   ): Promise<Message> {
